@@ -1,0 +1,30 @@
+---
+
+# this playbook orchestrates other playbooks and makes sure a fireball connection is established for subsequent playbooks
+
+- name: set up openam for fpg dev purposes
+  hosts: ${hosts}
+  gather_facts: no
+
+  # quick fireball, if specified
+  connection: ssh
+  tasks:
+    - name: start/renew fireball connection
+      action: fireball
+      when_string: ${connection} == "fireball"
+
+    # temp test of included vars
+    # - name: test var
+      # yum: name=${connection} state=installed
+
+    - name: temp test of included vars
+      debug: msg="connection = ${connection}"
+
+# - include: ../fireball.yml
+# - include: system.yml
+# - include: ../openam/install.yml
+# - include: ../openam/tools.yml
+# - include: ../openam/docs.yml
+# - include: ../openam/configure.yml
+- include: ../openam/upgrade.yml
+# - include: ../openam/uninstall.yml

@@ -1,0 +1,8 @@
+---
+
+# this is not really needed unless it's a manual setup like jetty's
+
+- hosts: ${hosts}
+
+  tasks:
+    - include: tasks/install.yml

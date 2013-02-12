@@ -1,0 +1,119 @@
+---
+
+- hosts: ${hosts}
+
+  handlers:
+    - include: handlers/restart.yml
+
+  tasks:
+
+    - name: create openam config dir
+      file: path=${openam_config_dir}
+            state=directory
+            owner=${container_owner}
+            group=${container_owner}
+      register: mkd_openam_config
+
+    - name: fail if openam config dir is already installed
+      fail: msg="OpenAM is already installed, (config dir not empty)"
+      when_boolean: not ${mkd_openam_config.changed}
+
+    - name: transfer openam
+      copy: src=/Users/fpg/Documents/bin/openam/openam_${openam_version}.zip dest=${artefact_dir}
+      when_boolean: ${openam_transfer}
+
+    - name: download openam
+      get_url: url=${openam_archive} dest=${artefact_dir}
+      when_boolean: not ${openam_transfer}
+
+    - name: install unzip
+      yum: name=unzip state=present
+
+    - name: unzip openam
+      command: unzip -qo ${artefact_dir}/openam_${openam_version}.zip -d /tmp
+
+    - name: create admin tools dir
+      file: path=${openam_tools_admin}
+            state=directory
+      tags: tools
+
+    - name: unzip admin tools
+      command: unzip -qo /tmp/opensso/tools/ssoAdminTools.zip -d ${openam_tools_admin}
+      tags: tools
+
+    - name: create configurator tools dir
+      file: path=${openam_tools_configurator}
+            state=directory
+      tags: tools
+
+    - name: unzip configurator tools
+      command: unzip -qo /tmp/opensso/tools/ssoConfiguratorTools.zip -d ${openam_tools_configurator}
+      tags: tools
+
+    - name: create diagnostic tools dir
+      file: path=${openam_tools_diagnostic}
+            state=directory
+      tags: tools
+
+    - name: unzip diagnostic tools
+      command: unzip -qo /tmp/opensso/tools/ssoDiagnosticTools.zip -d ${openam_tools_diagnostic}
+      tags: tools
+
+    - name: create headless openam war file
+      shell: cd /tmp/opensso/deployable-war && sh createwar.sh /tmp/headless --type noconsole -w headless.war
+      when_boolean: ${openam_headless}
+
+    - name: deploy headless openam war to java container
+      command: cp /tmp/opensso/deployable-war/headless.war ${container_webapps}${openam_deployment_uri}.war
+      when_boolean: ${openam_headless}
+
+    - name: deploy regular openam war to java container
+      command: cp /tmp/opensso/deployable-war/opensso.war ${container_webapps}${openam_deployment_uri}.war
+      when_boolean: not ${openam_headless}
+
+    # - name: fix openam war ownership
+      # command: chown ${container_owner}:${container_owner} ${container_webapps}/signon.war
+
+    # TODO: make this work regardless of container (eg. jetty)
+    - name: configure java container
+      template: src=templates/setenv.sh
+                dest=${container_home}/bin/setenv.sh
+                mode=0644
+                owner=${container_owner}
+                group=${container_owner}
+      notify: restart ${container_service}
+
+    - name: prepare openam configuration
+      template: src=templates/openam_first_config.properties
+                dest=/tmp/openam_config.properties
+                mode=0400
+      when_boolean: ${openam_first_server}
+
+    - name: prepare openam configuration
+      template: src=templates/openam_subsequent_config.properties
+                dest=/tmp/openam_config.properties
+                mode=0400
+      when_boolean: not ${openam_first_server}
+
+    - name: start java container
+      service: name=${container_service} state=started
+
+    - name: wait for java container
+      wait_for: port=8080 delay=0 timeout=120
+
+    - name: build openam with configurator
+      command: java -jar ${openam_tools_configurator}/configurator.jar --file /tmp/openam_config.properties
+      tags: build
+
+    - name: set up admin tools
+      shell: export JAVA_HOME=${java_home} && ./setup --path ${openam_config_dir} --debug ${openam_tools_admin}/debug --log ${openam_tools_admin}/log
+      cd: ${openam_tools_admin}
+      tags: tools
+
+    - name: clean up tmp artefacts
+      file: path=/tmp/openam_config.properties state=absent
+      tags: cleanup
+
+    - name: clean up tmp artefacts
+      file: path=/tmp/opensso state=absent
+      tags: cleanup

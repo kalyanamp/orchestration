@@ -1,0 +1,11 @@
+.DS_Store
+ansible_hosts
+bak/
+dev/dev_hosts
+dev/secret/
+group_vars/
+notes/
+openam/bak/
+openam_fpg/openam_fpg_hosts
+openam_fpg/secret/
+secret/

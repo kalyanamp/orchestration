@@ -1,0 +1,57 @@
+---
+
+- name: set up logstash prerequisites on the system
+  hosts: ${hosts}
+  gather_facts: no
+
+  tasks:
+
+    - name: create artefact dir
+      file: path=${artefact_dir} state=directory
+
+    - name: install java for logstash and graylog2 server
+      yum: name=${java_package} state=latest
+
+    - name: install tar
+      yum: name=tar state=latest
+
+    - name: install unzip
+      yum: name=unzip state=present
+
+    - name: install node.js for statsd
+      yum: name=node state=latest
+      tags: quick
+
+    - name: clone the statsd project
+      git: repo=https://github.com/etsy/statsd.git dest=/opt/statsd
+      tags: quick
+
+    - name: install mongodb for graylog2 server
+      yum: name=${item} state=latest
+      with_items:
+        - mongodb
+        - mongodb-server
+
+    # TODO: the yum module needs to support groupinstall
+    - name: install requirements for graylog2 web
+      command: yum groupinstall "Development Tools" --assumeyes
+
+    - name: install requirements for graylog2 web
+      yum: name=${item} state=latest
+      with_items:
+        - ruby
+        - rubygems
+        - rake
+        - ruby-devel
+        - openssl-devel
+        - git
+
+    - name: install bundler gem for graylog2 web
+      command: gem install bundler
+
+    - name: install ansible fireball node
+      yum: name=ansible-node-fireball state=latest
+
+    - name: start a fireball connection
+      action: fireball
+      tags: fireball

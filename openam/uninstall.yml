@@ -1,0 +1,45 @@
+---
+
+- hosts: ${hosts}
+
+  tasks:
+
+    - name: stop java container
+      service: name=${container_service}
+                state=stopped
+
+    - name: remove openam config dir
+      file: path=${openam_config_dir}
+            state=absent
+
+    - name: undeploy openam webapp
+      file: path=${container_webapps}${openam_deployment_uri}.war
+            state=absent
+
+    - name: undeploy openam war file
+      file: path=${container_webapps}${openam_deployment_uri}
+            state=absent
+
+    - name: remove the openam hidden file
+      file: path=${container_home}/.openssocfg
+            state=absent
+
+    - name: remove the admin tools
+      file: path=${openam_tools_admin}
+            state=absent
+
+    - name: remove the configurator tools
+      file: path=${openam_tools_configurator}
+            state=absent
+
+    - name: remove the diagnostic tools
+      file: path=${openam_tools_diagnostic}
+            state=absent
+
+    - name: remove the session tools
+      file: path=${openam_tools_session}
+            state=absent
+
+    - name: remove the docs
+      file: path=${openam_docs}
+            state=absent

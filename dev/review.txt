@@ -1,0 +1,121 @@
+---
+
+# IMPORTANT: don't use ebs because it costs extra money and it's less robust and gets you away from ephemeral architecture and it needs to be automatically mounted and if it's unavailable you can't boot up an instance to which it gets automatically mounted etc etc. use s3 instead.
+
+# (MAYBE) set up dropbox contents using s3 (make sure your changes get pushed back to dropbox? then there won't be any version control. maybe just use the dropbox client?)
+# set up a google docs client
+# install important tools like latest vim, tmux, tomcat, jetty, ldapvi, ldapsearch, etc (expanding list)
+# set up the svn and git repos
+# pull your vim and dotfile changes
+# install a pdf viewer and a docs/ref dir
+# set up fireball at the end (or at the beginning?)
+# send an alert to the host (this computer) once it's set up and you can ssh, and then once fireball is up, and then once everything else is done
+# ssh and vnc in (and the other vnc alternative)
+
+# l
+# cd /opt/
+# l
+# sudo cp -R aws/ /mnt/sync/
+# cd /mnt/sync/
+# l
+# cd ..
+# umount /mnt/sync
+# sudo umount /mnt/sync
+# cd ..
+# sudo umount /mnt/sync
+# fuser
+# fuser -c
+# fuser -c /mnt/sync
+# lsof
+# fuser -c /mnt/sync
+# lsof | grep 2404c
+# sudo umount /mnt/sync/
+# sudo umount /mnt/sync
+# l
+# cd
+# sudo umount -f /mnt/sync
+# ps -ef | grep 2404c
+# fuser -c /mnt/sync
+# ps -auxw | grep 2404c
+# ps -aux | grep 2404c
+# ps -au | grep 2404c
+# ps -a | grep 2404c
+# ps -axw | grep 2404c
+# ps -ax | grep 2404c
+# ps -aw | grep 2404c
+# ps -eaf | grep 2404c
+# sudo umount -l /dev/sync
+# sudo umount -l /mnt/sync
+# cd /mnt
+# l
+# cd sync/
+# l
+# cd ..
+# l
+# cd ..
+# fuser -c /mnt/sync
+# fuser -vc /mnt/sync
+# l
+# cd /dev
+# l
+# l | grep sdf
+# cd /dev/sdf
+# fdisk -l
+# which fdisk
+# sudo fdisk -l
+# cd /mnt
+# l
+# sudo mkfs -t ext3 /dev/xvdf
+# l
+# sudo mkdir sync
+# sudo mount /dev/xvdf /mnt/sync
+# l
+# cd sync/
+# l
+# touch testing
+# l
+# whoami
+# cd
+# l
+# cd -
+# chown -R ec2-user:ec2-user .
+# sudo chown -R ec2-user:ec2-user .
+# l
+# touch testing
+# l
+# vi testing
+# vi
+# yum update
+# sudo yum update
+# sudo service iptables status
+# sudo service iptables -L
+# sudo service iptables start
+# sudo service iptables -L
+# sudo iptables -L
+# l
+# ls -la
+# vi .bashrc
+# . .bashrc
+# vi /etc/sysconfig/
+# vi /etc/sysconfig/network
+# su -
+# sudo ls
+# sudo su -
+# bash
+# cd /opt
+# l
+# cd aws
+# l
+# which tmux
+# yum install tmux
+# sudo yum install tmux
+# du
+# du -h
+# du -h /
+# df
+# d -h
+# df -h
+# yum search desktop
+# which vim
+# yum search desktop | grep desktop
+# sudo halt

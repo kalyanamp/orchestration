@@ -1,0 +1,28 @@
+---
+
+- name: launch a new general purpose ec2 instance
+  hosts: ec2
+  gather_facts: no
+
+  tasks:
+
+    # - name: launch a new instance
+      local_action: ec2 keypair=${keypair} image=${image_id} type=${instance_type} group=${security_group} ec2_url=${ec2_url} wait=true
+      register: ec2_results
+
+    # TODO: find out why this times out
+    # - name: announce the instance
+      # debug: msg="new instance launched -  ${ec2_results.instances[0].id}"
+
+    - name: associate an elastic ip with the instance
+      local_action: shell euca-associate-address --instance ${ec2_results.instances[0].id} --region ${ec2_region} ${public_ip}
+
+    - name: wait for the ip to be associated and functional
+      local_action: wait_for host=${public_ip} port=22 delay=20 timeout=300
+
+    - name: tag the instance
+      local_action: shell euca-create-tags --tag Name=${instance_name} ${ec2_results.instances[0].id}
+
+    - name: enable monitoring for the instance
+      local_action: shell euca-monitor-instances --region ${ec2_region} ${ec2_results.instances[0].id}
+      when_set: ${monitoring}

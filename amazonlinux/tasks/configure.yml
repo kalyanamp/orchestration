@@ -1,0 +1,40 @@
+---
+
+# NOTE: http://mattiasgeniar.be/2011/11/13/changing-the-time-and-timezone-settings-on-centos-or-rhel/
+
+# TODO: needs to be built into the yum module
+- name: update yum packages
+  command: yum --assumeyes update
+
+- name: change the hostname
+  command: hostname -v ${hostname}
+
+- name: persist the hostname after a reboot
+  lineinfile: dest=/etc/sysconfig/network
+              regexp=^HOSTNAME=
+              line=HOSTNAME=${hostname}
+              state=present
+
+- name: add the hostname to the hosts file
+  template: src=templates/hosts dest=/etc/hosts
+
+- name: symlink the correct localtime
+  file: path=/etc/localtime
+        state=absent
+
+- name: symlink the correct localtime
+  file: src=/usr/share/zoneinfo/${timezone}
+        dest=/etc/localtime
+        state=link
+
+- name: update the clock config
+  lineinfile: dest=/etc/sysconfig/clock
+                regexp=^ZONE=
+                line=ZONE=${timezone}
+                state=present
+
+- name: install ntpd daemon
+  yum: name=ntp state=installed
+
+- name: start ntp daemon now and after reboots
+  service: name=ntpd state=started enabled=yes

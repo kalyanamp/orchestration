@@ -1,0 +1,27 @@
+# motd task
+
+    # - name: set the motd
+      # template: src=templates/motd dest=/etc/motd
+
+
+# motd vars
+
+=> ForgeRock OpenAm {{ openam_version }} (and tools!)
+
+--
+* Maintainer: {{ maintainer }}
+* Readme: {{ readme }}
+--
+
+
+# motd template
+
+=> ForgeRock OpenAm {{ openam_version }} (and tools!)
+
+--
+* Maintainer: {{ maintainer }}
+* Readme: {{ readme }}
+--
+
+
+

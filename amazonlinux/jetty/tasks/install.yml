@@ -1,0 +1,80 @@
+---
+
+# http://wiki.eclipse.org/Jetty/Howto/Install_Jetty
+# http://central.maven.org/maven2/org/mortbay/jetty/dist/jetty-rpm/
+# http://wiki.eclipse.org/Jetty/Howto/Port80#Configuring_Jetty.27s_SetUID_feature
+
+# TODO: make this an rpm and add it to a local yum repo, so i can use the ansible yum module and check if it's installed
+# TODO: generate a self signed ssl cert (because reasons)
+# TODO: see if you need to logrotate standard logs -- http://rimuhosting.com/jetty.jsp
+# TODO: fix default context error: http://docs.codehaus.org/display/JETTY/How+to+Create+Custom+Error+Pages (point 4)
+# NOTE: reference: http://www.copper-arrow.com/blog/jetty-web-server-centos-6
+
+# TODO: needs a jetty module
+- name: download jetty
+  get_url: url=${jetty_archive} dest=/tmp/jetty-${jetty_version}.tar.gz
+
+- name: create a jetty group
+  group: name=jetty state=present
+
+- name: create a jetty user
+  user: name=jetty
+        comment="Jetty Web Server"
+        group=jetty
+        home=/opt/jetty
+        shell=/sbin/nologin
+        state=present
+
+- name: create a jetty dir
+  file: path=/opt/jetty-${jetty_version}
+        state=directory
+        owner=jetty
+        group=jetty
+        mode=0755
+
+# TODO: needs an archive/unarchive module (tar, tgz, zip, jar)
+- name: extract jetty
+  command: tar -zxf /tmp/jetty-${jetty_version}.tar.gz -C /opt/jetty-${jetty_version} --strip-components 1 --overwrite --overwrite-dir
+
+- name: fix jetty dir ownership
+  # TODO: the file module should support this change
+  # file: path=/opt/jetty
+        # state=directory
+        # owner=jetty
+        # group=jetty
+  command: chown -R jetty:jetty /opt/jetty-${jetty_version}
+
+- name: fix jetty dir permissions
+  command: chmod go-w /opt/jetty-${jetty_version}
+
+- name: create a symbolic link
+  file: src=/opt/jetty-${jetty_version}
+        dest=/opt/jetty
+        state=link
+
+- name: prepare jetty configuration
+  template: src=templates/jetty.sh
+            dest=/etc/init.d/jetty
+            mode=0755
+
+- name: delete default test webapp
+  file: path=/opt/jetty/webapps/test.war state=absent
+
+- name: delete default test context
+  file: path=/opt/jetty/contexts/test.xml state=absent
+
+- name: delete default test context
+  file: path=/opt/jetty/contexts/test.d state=absent
+
+- name: delete default spdy webapp
+  file: path=/opt/jetty/webapps/spdy.war state=absent
+
+- name: delete default javadoc context
+  file: path=/opt/jetty/contexts/javadoc.xml state=absent
+
+- name: create jetty service
+  command: chkconfig --add jetty
+
+- name: start jetty on boot
+  # command: chkconfig --level 345 jetty on
+  service: name=jetty enabled=yes

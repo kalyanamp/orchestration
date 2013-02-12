@@ -1,0 +1,21 @@
+---
+
+- hosts: ${hosts}
+  user: root
+  gather_facts: no
+
+  tasks:
+
+    - name: download kibana
+      get_url: url=${kibana_archive} dest=${artefact_dir}/kibana-${kibana_version}.zip
+
+    - name: unzip kibana archive
+      command: unzip -qo ${artefact_dir}/kibana-${kibana_version}.zip -d /opt
+
+    - name: create a symbolic link
+      file: src=/opt/Kibana-${kibana_version}
+            dest=${kibana_dir}
+            state=link
+
+    - name: install and lock all required gems
+      shell: cd ${kibana_dir} && bundle install

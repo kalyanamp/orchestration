@@ -1,0 +1,25 @@
+---
+
+# TODO: transfer startup shell script for stash
+# TODO: fix file/dir ownerships and permissions
+# TODO: investigate java startup/shutdown service handler
+
+- hosts: ${hosts}
+  user: root
+  gather_facts: no
+
+  tasks:
+
+    - name: download elasticsearch
+      get_url: url=${elasticsearch_archive} dest=${artefact_dir}
+
+    - name: unzip elasticsearch archive
+      command: unzip -qo ${artefact_dir}/elasticsearch-${elasticsearch_version}.zip -d /opt
+
+    - name: create a symbolic link
+      file: src=/opt/elasticsearch-${elasticsearch_version}
+            dest=${elasticsearch_dir}
+            state=link
+
+    - name: start elasticsearch
+      command: ${elasticsearch_dir}/bin/elasticsearch

@@ -1,0 +1,143 @@
+---
+
+# TODO: review the included ntp pool conf file and figure out a median for your servers
+# TODO: likewise, use a template hosts file for your servers
+
+- name: initalise RPM based instances
+  hosts: ${hosts}
+  gather_facts: yes
+
+  tasks:
+
+    # TODO: write an idempotent hostname module
+    # - name: update the hostname
+    #   hostname: name=${hostname}
+
+    # TODO: write an idempotent time module. this will need to symlink the local time, update the hardware clock config (if applicable), (immediately) enable local time on the system (ntpdate? getting deprecated), and set the hwclock (if applicable)
+    # - name: set the local time according to the timezone
+    #   time: name="${timezone}"
+
+    - name: immediately update the hostname
+      command: hostname -v ${hostname}
+
+    - name: persist the hostname
+      lineinfile: dest=/etc/sysconfig/network
+                  regexp=^HOSTNAME=
+                  line=HOSTNAME=${hostname}
+                  state=present
+
+    - name: add the hostname to the hosts file
+      lineinfile: dest=/etc/hosts
+                  regexp="^127.0.0.1    ${hostname}"
+                  line="127.0.0.1    ${hostname}"
+                  state=present
+
+    - name: symlink the correct localtime - 1
+      file: path=/etc/localtime
+            state=absent
+
+    - name: symlink the correct localtime - 2
+      file: src=/usr/share/zoneinfo/${timezone}
+            dest=/etc/localtime
+            state=link
+
+    # - name: update the (hardware) clock config
+    #   lineinfile: dest=/etc/sysconfig/clock
+    #               regexp=^ZONE=
+    #               line=ZONE=${timezone}
+    #               state=present
+
+    - name: install ntpd daemon
+      yum: name=ntp state=installed
+
+    - name: start ntp daemon now and after reboots
+      service: name=ntpd state=started enabled=yes
+
+    - name: configure local ntp servers
+      template: src=${ntp_file}
+                dest=/etc/ntp.conf
+                backup=yes
+      when_set: ${ntp_file}
+
+    - name: install sudo
+      yum: name=sudo state=installed
+      when_string: ${sudo_user} != "root"
+
+    - name: create a privileged account for ${sudo_user}
+      user: name=${sudo_user}
+            groups=wheel
+            state=present
+      when_string: ${sudo_user} != "root"
+
+    - name: transfer public key for ${sudo_user}
+      authorized_key: user=${sudo_user} key="${sudo_pub_key}"
+
+    - name: find out the linux distribution
+      debug: msg="linux distribution - ${ansible_distribution}"
+
+    - name: find out the architecture
+      debug: msg="architecture - ${ansible_architecture}"
+
+    - name: find out the system
+      debug: msg="system - ${ansible_system}"
+
+    - name: find out the kernel
+      debug: msg="kernel - ${ansible_kernel}"
+
+    # TODO: find a more abstract way to determine if this is an amazon linux instance
+    # perhaps using the hostname? cloud1.fpg.com. i think ansible will support this in the next version
+    - name: install the epel repository (not needed by fedora)
+      command: rpm -Uvh http://download.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+      when_string: ${ansible_distribution} != "Fedora" and ${ansible_kernel} != "3.2.30-49.59.amzn1.x86_64"
+      ignore_errors: yes
+
+    - name: update yum packages
+      command: yum --assumeyes update
+      when_set: ${update_packages}
+
+    # FIXME: broken on fedora. test on centos.
+    # TODO: find a way to enable the epel repo (while still make this skip epel for fedora)
+    # TODO: change runlevel too?
+    # http://howto.eyeoncomputers.com/linux/install-desktop-centos/
+    - name: install desktop
+      command: yum groupinstall basic-desktop desktop-platform x11 fonts
+      when_set: ${install_desktop}
+
+    # TODO: find a way to enable the epel repo (while still make this skip epel for fedora)
+    - name: install system tools
+      yum: name=${item} enablerepo=epel state=latest
+      with_items:
+        - net-tools
+        - man
+        - zip
+        - unzip
+        - wget
+        - curl
+        - ack
+        - vim-enhanced
+        - tmux
+        - ansible-node-fireball
+      when_set: ${install_system}
+
+    # TODO: find a way to enable the epel repo (while still make this skip epel for fedora)
+    - name: install monitoring tools
+      yum: name=${item} enablerepo=epel state=latest
+      with_items:
+        - mlocate
+        - jwhois
+        - nc
+        - telnet
+        - htop
+        - iftop
+        - iotop
+        - ntop
+        - atop
+        - lsof
+        - ifstatus
+        - iptraf
+        - nethogs
+        - dstat
+        - sysstat
+        - traceroute
+        - mtr
+      when_set: ${install_monitoring}

@@ -1,0 +1,10 @@
+[push]
+        default = simple
+
+[user]
+        name = {{ git_username }}
+        email = {{ git_email }}
+
+[github]
+        user = {{ github_username }}
+        token = {{ github_token }}

@@ -1,0 +1,32 @@
+---
+
+- hosts: ${hosts}
+  user: root
+  gather_facts: no
+
+  tasks:
+
+    - name: create logstash dir
+      file: path=${logstash_dir}
+            state=directory
+
+    - name: create logstash bin dir
+      file: path=${logstash_dir}/bin
+            state=directory
+
+    - name: download logstash
+      get_url: url=${logstash_archive} dest=${logstash_dir}/bin
+
+    - name: create logstash conf dir
+      file: path=${logstash_dir}/conf
+            state=directory
+
+    - name: create a symbolic link
+      file: src=${logstash_dir}/bin/logstash-${logstash_version}-monolithic.jar
+            dest=${logstash_dir}/bin/logstash.jar
+            state=link
+
+    - name: transfer startup shell script
+      template: src=templates/startup.sh
+                dest=${logstash_dir}/bin/startup.sh
+

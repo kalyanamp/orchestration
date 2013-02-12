@@ -1,0 +1,82 @@
+---
+
+# TODO: fix file/dir ownerships and permissions
+# TODO: run through this: http://sphughes.com/2012/01/01/a-more-secure-logstash-install/
+# TODO: switch to the java service wrapper to allow for running as a logstash user
+
+- hosts: ${hosts}
+  user: root
+  gather_facts: no
+
+  tasks:
+
+    - name: create main dir
+      file: path=${logstash_dir}
+            state=directory
+
+    - name: create bin dir
+      file: path=${logstash_bin_dir}
+            state=directory
+
+    - name: create conf dir
+      file: path=${logstash_conf_dir}
+            state=directory
+
+    - name: create log dir
+      file: path=${logstash_log_dir}
+            state=directory
+
+    - name: create patterns dir
+      file: path=${logstash_patterns_dir}
+            state=directory
+
+    - name: download jar
+      get_url: url=${logstash_archive} dest=${artefact_dir}
+
+    - name: copy jar to bin dir
+      command: cp ${artefact_dir}/${logstash_jar} ${logstash_bin_dir}
+
+    - name: create a symbolic link
+      file: src=${logstash_bin_dir}/${logstash_jar}
+            dest=${logstash_bin_dir}/logstash.jar
+            state=link
+
+    - name: transfer the init script
+      template: src=~/Documents/cm/logstash/templates/logstash.sh
+                dest=/etc/rc.d/init.d/logstash
+                mode=0755
+
+    # - name: download init script
+    #   get_url: url=${logstash_conf} dest=${artefact_dir}
+
+    # - name: configure java memory
+    #   lineinfile: dest=${artefact_dir}/logstash.sh
+    #               regexp=^JAVAMEM=
+    #               line=JAVAMEM=${logstash_mem}
+    #               state=present
+
+    # - name: configure config dir
+    #   lineinfile: dest=${artefact_dir}/logstash.sh
+    #               regexp=^CONFIG_DIR=
+    #               line=CONFIG_DIR=${logstash_conf_dir}
+    #               state=present
+
+    # - name: configure logfile
+    #   lineinfile: dest=${artefact_dir}/logstash.sh
+    #               regexp=^LOGFILE=
+    #               line=LOGFILE=${logstash_log_dir}/logstash.log
+    #               state=present
+
+    # - name: configure jarname
+    #   lineinfile: dest=${artefact_dir}/logstash.sh
+    #               regexp=^JARNAME=
+    #               line=JARNAME=${logstash_bin_dir}/${logstash_jar}
+    #               state=present
+
+    # - name: install the init script
+    #   command: cp ${artefact_dir}/logstash.sh /etc/rc.d/init.d/logstash
+
+    # - name: make the init script executable
+    #   file: path=/etc/rc.d/init.d/logstash
+    #         mode=0755
+    #   tags: quick

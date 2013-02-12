@@ -1,0 +1,1 @@
+/opt/ansible/bin/ansible-playbook --verbose --inventory-file ~/Documents/cm/logstash/logstash_hosts --user root --private-key ~/Documents/cm/keys/root.pem --extra-vars "hosts=$1" --tags quick ~/Documents/cm/logstash/playbooks/system.yml

@@ -1,0 +1,53 @@
+---
+
+- hosts: ${hosts}
+
+  vars:
+
+      openam_docs_notes: http://docs.forgerock.org/en/openam/${openam_version}/release-notes/index.html
+
+      openam_docs_install: http://docs.forgerock.org/en/openam/${openam_version}/install-guide/index.html
+
+      openam_docs_admin: http://docs.forgerock.org/en/openam/${openam_version}/admin-guide/index.html
+
+      openam_docs_dev: http://docs.forgerock.org/en/openam/${openam_version}/dev-guide/index.html
+
+      openam_docs_reference: http://docs.forgerock.org/en/openam/${openam_version}/reference/index.html
+
+  tasks:
+
+
+    # - name: start a fireball connection
+      # action: fireball
+      # tags: testing
+
+    - name: create docs dir
+      file: path=${openam_docs}
+            state=directory
+
+    - name: download release notes
+      get_url: url=${openam_docs_notes} dest=/opt/docs/release_notes.html
+      ignore_errors: yes
+
+    - name: download installation guide
+      get_url: url=${openam_docs_install} dest=/opt/docs/install_guide.html
+      ignore_errors: yes
+
+    - name: download administration guide
+      get_url: url=${openam_docs_admin} dest=/opt/docs/admin_guide.html
+      ignore_errors: yes
+
+    - name: download developer guide
+      get_url: url=${openam_docs_dev} dest=/opt/docs/dev_guide.html
+      ignore_errors: yes
+
+    - name: download reference
+      get_url: url=${openam_docs_reference} dest=/opt/docs/reference.html
+      ignore_errors: yes
+
+    - name: create javadocs dir
+      file: path=${openam_docs}/javadocs
+            state=directory
+
+    - name: extract javadocs
+      command: unzip -qo /tmp/opensso/docs/opensso-public-javadocs.jar -d ${openam_docs}/javadocs
