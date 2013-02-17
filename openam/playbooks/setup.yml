@@ -1,0 +1,30 @@
+---
+
+# this playbook orchestrates other playbooks and makes sure a fireball connection is established for subsequent playbooks
+
+# TODO: figure out how to make ansible verbose from vagrant
+
+- name: set up openam replicating hda's uat environment
+  hosts: $hosts
+  user: vagrant
+  sudo: yes
+  gather_facts: no
+
+  vars_files:
+    - ../vars/openam.yml
+
+  # quick fireball, if specified
+  # connection: ssh
+  # tasks:
+  #   - name: start/renew fireball connection
+  #     action: fireball
+  #     when_string: $connection == "fireball"
+
+# - include: ../fireball.yml
+# - include: system.yml
+# - include: install.yml
+# - include: tools.yml
+# - include: docs.yml
+- include: configure.yml
+# - include: upgrade.yml
+# - include: uninstall.yml

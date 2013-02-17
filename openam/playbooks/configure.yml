@@ -1,15 +1,22 @@
 ---
 
+# TODO: configure the basic stuff here first, and the load balancer if the option is set, then bring up any subsequent servers and join them to the cluster
+
 # initial config for all deployments
 # probably end up doing nothing here in case you mess things up -- probably just do some verification (eg. list-servers)
 
-- hosts: ${hosts}
+- hosts: $hosts
+  sudo: yes
+
+  vars_files:
+    - ../vars/openam.yml
 
   vars:
-
     - passwd_file: /tmp/passwd.txt
-    - admin_creds: --adminid amadmin --password-file ${openam_passwd_file}
-    - ssoadm_bin: ${openam_tools_admin}${openam_deployment_uri}/bin/ssoadm
+    - admin_creds: --adminid amadmin --password-file $passwd_file
+    - ssoadm_bin: $openam_tools_admin$openam_deployment_uri/bin/ssoadm
+  # TODO: these are host specific vars, find a way to pass them into ansible from vagrant
+    - openam_hostname: oamuatsecl001.hpp.nhccn.com.au
 
   tasks:
 
@@ -21,19 +28,21 @@
 
     # NOTE: you can refer to the "default" server as well as individual ones
 
-    - name: transfer password file
-    # template: src=/Users/fpg/Documents/projects/cloud/templates/passwd.txt.j2
-            # dest=${passwd_file}
-            # mode=0400
+    - name: create the password file
+      shell: echo $openam_admin_passwd > $passwd_file
+             creates=$passwd_file
+
+    - name: set the permissions for the password file
+      file: path=$passwd_file mode=0400
 
     # - name: list servers
-    # command: ${ssoadm_bin} list-servers ${admin_creds}
+    # command: $ssoadm_bin list-servers $admin_creds
 
-    - name: list server config
-    # command: ${ssoadm_bin} list-server-cfg ${admin_creds} --servername ${openam_server_url}${openam_deployment_uri} --withdefaults
+    # - name: list server config
+    # command: $ssoadm_bin list-server-cfg $admin_creds --servername $openam_server_url$openam_deployment_uri --withdefaults
 
-    # - name: enable debugging
-    command: ${ssoadm_bin} update-server-cfg ${admin_creds} --servername ${openam_server_url}${openam_deployment_uri} --attributevalues "com.iplanet.services.debug.level=message"
+    - name: enable debugging
+      command: $ssoadm_bin update-server-cfg $admin_creds --servername $openam_server_url$openam_deployment_uri --attributevalues "com.iplanet.services.debug.level=message"
 
     # TODO: delete the default embedded datastore (in top level realm or further down?)
     # ./ssoadm delete-datastores --realm /test --names embedded --adminid amadmin --password-file /tmp/pwd.txt --verbose
@@ -53,5 +62,5 @@
 
     # set attributes for entity (how?)
 
-    - name: clean up tmp artefacts
-      file: path=${passwd_file} state=absent
+    - name: clean up the password file for security reasons
+      file: path=$passwd_file state=absent

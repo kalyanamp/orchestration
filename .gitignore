@@ -6,6 +6,8 @@ dev/secret/
 group_vars/
 notes/
 openam/bak/
+openam/files/
+openam/secret/
 openam_fpg/openam_fpg_hosts
 openam_fpg/secret/
 secret/

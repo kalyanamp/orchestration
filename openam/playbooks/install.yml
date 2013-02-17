@@ -1,0 +1,142 @@
+---
+
+# TODO: convert to 10.1.0 version
+# TODO: enable ssl option
+# TODO: enable headless option
+# TODO: address copy bug: doesn't check first that file exists, the way get_url does
+
+- name: install openam
+  hosts: $hosts
+  user: vagrant
+  sudo: yes
+  gather_facts: no
+
+  vars_files:
+    - ../vars/openam.yml
+
+  # TODO: these are host specific vars, find a way to pass them into ansible from vagrant
+  vars:
+    - openam_hostname: oamuatsecl001.hpp.nhccn.com.au
+    - openam_cookie_domain: .hpp.nhccn.com.au
+    # - openam_root_suffix: o=openam,dc=nhccn,dc=com,c=au
+    - openam_root_suffix: o=openam,dc=firstpointglobal,dc=com
+    # we want to set this for subsequent servers
+    - openam_join_cluster: yes
+
+  handlers:
+    - include: ../handlers/restart.yml
+
+  tasks:
+
+    - name: test passed in var openam_hostname
+      debug: msg="openam_hostname = $openam_hostname"
+
+    - name: test passed in var openam_cookie_domain
+      debug: msg="openam_cookie_domain = $openam_cookie_domain"
+
+    - name: create openam config dir
+      file: path=$openam_config_dir
+            state=directory
+            owner=$container_owner
+            group=$container_owner
+
+    - name: try to transfer openam first
+      copy: src=../files/openam_$openam_version.zip
+            dest=$artefact_dir
+      register: transfer_result
+      ignore_errors: yes
+
+    - name: otherwise, download openam
+      get_url: url=$openam_archive dest=$artefact_dir
+      when_failed: $transfer_result
+
+    - name: unzip openam
+      command: unzip -q $artefact_dir/openam_$openam_version.zip -d /tmp
+               creates=/tmp/opensso
+
+    - name: create admin tools dir
+      file: path=$openam_tools_admin
+            state=directory
+      tags: tools
+
+    - name: unzip admin tools
+      command: unzip -q /tmp/opensso/tools/ssoAdminTools.zip -d $openam_tools_admin
+               creates=$openam_tools_admin
+      tags: tools
+
+    - name: create configurator tools dir
+      file: path=$openam_tools_configurator
+            state=directory
+      tags: tools
+
+    - name: unzip configurator tools
+      command: unzip -q /tmp/opensso/tools/ssoConfiguratorTools.zip -d $openam_tools_configurator
+               creates=$openam_tools_configurator
+      tags: tools
+
+    - name: create diagnostic tools dir
+      file: path=$openam_tools_diagnostic
+            state=directory
+      tags: tools
+
+    - name: unzip diagnostic tools
+      command: unzip -q /tmp/opensso/tools/ssoDiagnosticTools.zip -d $openam_tools_diagnostic
+               creates=$openam_tools_diagnostic
+      tags: tools
+
+    # - name: create headless openam war file
+    #   shell: cd /tmp/opensso/deployable-war && sh createwar.sh /tmp/headless --type noconsole -w headless.war
+    #   when_boolean: $openam_headless
+
+    - name: deploy headless openam war to java container
+      file: path=/tmp/opensso/deployable-war/headless.war
+            dest=$container_webapps$openam_deployment_uri.war
+            creates=$container_webapps$openam_deployment_uri.war
+      when_boolean: $openam_headless
+
+    - name: deploy regular openam war to java container
+      file: path=/tmp/opensso/deployable-war/opensso.war
+            dest=$container_webapps$openam_deployment_uri.war
+            creates=$container_webapps$openam_deployment_uri.war
+      when_boolean: not $openam_headless
+
+    - name: configure java container
+      template: src=../templates/setenv.sh
+                dest=$container_home/bin/setenv.sh
+                mode=0644
+                owner=$container_owner
+                group=$container_owner
+      notify: restart $container_service
+
+    - name: prepare openam configuration for first server
+      template: src=../templates/openam_config.properties
+                dest=/tmp/openam_config.properties
+                mode=0400
+      when_unset: $openam_join_cluster
+
+    - name: prepare openam configuration for subsequent servers
+      template: src=../templates/openam_subsequent_config.properties
+                dest=/tmp/openam_config.properties
+                mode=0400
+      when_set: $openam_join_cluster
+
+    - name: start java container
+      service: name=$container_service state=started
+
+    - name: wait for java container
+      wait_for: port=8080 delay=0 timeout=120
+
+    - name: build openam with configurator
+      command: java -jar $openam_tools_configurator/configurator.jar --file /tmp/openam_config.properties
+               creates=$openam_config_dir
+      tags: build
+
+    - name: set up admin tools
+      shell: export JAVA_HOME=$java_home && ./setup --path $openam_config_dir --debug $openam_tools_admin/debug --log $openam_tools_admin/log
+             chdir=$openam_tools_admin
+             creates=$openam_tools_admin$openam_deployment_uri
+      tags: tools
+
+    - name: clean up config file for security reasons
+      file: path=/tmp/openam_config.properties state=absent
+      tags: cleanup

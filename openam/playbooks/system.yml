@@ -1,0 +1,27 @@
+---
+
+- name: set up openam prerequisites on the system
+  hosts: $hosts
+  user: vagrant
+  sudo: yes
+  gather_facts: no
+
+  vars_files:
+    - ../vars/openam.yml
+
+  tasks:
+
+    - name: install unzip
+      yum: name=unzip state=present
+
+    - name: install required java version
+      yum: name=$java_package state=present
+
+    - name: install required java container
+      yum: name=$container_package state=present
+
+    - name: start java container after reboots
+      service: name=$container_package enabled=yes
+
+    - name: create artefact dir
+      file: path=$artefact_dir state=directory
