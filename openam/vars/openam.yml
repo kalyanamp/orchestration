@@ -17,11 +17,10 @@ openam_deployment_uri: /signon
 openam_config_dir: ${openam_home}/openam
 openam_user_locale: en_US
 openam_server_locale: en_US
-openam_admin_passwd: $FILE(~/Documents/cm/openam/secret/admin_passwd)
-openam_agent_passwd: $FILE(~/Documents/cm/openam/secret/agent_passwd)
+openam_admin_passwd: $FILE(../secret/admin_passwd)
+openam_agent_passwd: $FILE(../secret/agent_passwd)
 openam_config_store_host: ${openam_hostname}
-openam_root_suffix: o=openam,dc=nhccn,dc=com,c=au
-openam_mgr_passwd: $FILE(~/Documents/cm/openam/secret/mgr_passwd)
+openam_mgr_passwd: $FILE(../secret/mgr_passwd)
 openam_docs: ${openam_home}/docs
 openam_tools_admin: ${openam_home}/ssoAdminTools
 openam_tools_configurator: ${openam_home}/ssoConfiguratorTools
