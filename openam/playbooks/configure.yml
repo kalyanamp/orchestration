@@ -11,13 +11,6 @@
   vars_files:
     - ../vars/openam.yml
 
-  vars:
-    - passwd_file: /tmp/passwd.txt
-    - admin_creds: --adminid amadmin --password-file $passwd_file
-    - ssoadm_bin: $openam_tools_admin$openam_deployment_uri/bin/ssoadm
-  # TODO: these are host specific vars, find a way to pass them into ansible from vagrant
-    - openam_hostname: oamuatsecl001.hpp.nhccn.com.au
-
   tasks:
 
     # TODO: add/test an option for creating a site with ssoadm (corresponding to a load balancer), listing the servers with ssoadm (saving them in ansible registers), then adding each server to the site with ssoadm
@@ -35,11 +28,11 @@
     - name: set the permissions for the password file
       file: path=$passwd_file mode=0400
 
-    # - name: list servers
-    # command: $ssoadm_bin list-servers $admin_creds
+    - name: list servers
+      command: $ssoadm_bin list-servers $admin_creds
 
-    # - name: list server config
-    # command: $ssoadm_bin list-server-cfg $admin_creds --servername $openam_server_url$openam_deployment_uri --withdefaults
+    - name: list server config
+      command: $ssoadm_bin list-server-cfg $admin_creds --servername $openam_server_url$openam_deployment_uri --withdefaults
 
     - name: enable debugging
       command: $ssoadm_bin update-server-cfg $admin_creds --servername $openam_server_url$openam_deployment_uri --attributevalues "com.iplanet.services.debug.level=message"

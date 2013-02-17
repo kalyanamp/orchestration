@@ -3,7 +3,6 @@
 # TODO: convert to 10.1.0 version
 # TODO: enable ssl option
 # TODO: enable headless option
-# TODO: address copy bug: doesn't check first that file exists, the way get_url does
 
 - name: install openam
   hosts: $hosts
@@ -13,15 +12,6 @@
 
   vars_files:
     - ../vars/openam.yml
-
-  # TODO: these are host specific vars, find a way to pass them into ansible from vagrant
-  vars:
-    - openam_hostname: oamuatsecl001.hpp.nhccn.com.au
-    - openam_cookie_domain: .hpp.nhccn.com.au
-    # - openam_root_suffix: o=openam,dc=nhccn,dc=com,c=au
-    - openam_root_suffix: o=openam,dc=firstpointglobal,dc=com
-    # we want to set this for subsequent servers
-    - openam_join_cluster: yes
 
   handlers:
     - include: ../handlers/restart.yml
