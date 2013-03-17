@@ -11,17 +11,17 @@ Vagrant::Config.run do |config|
   config.vm.customize ["modifyvm", :id, "--cpus", "1"]
 
   # default openam cluster configuration
-  cookie_domain = ".firstpointglobal.com"
+  cookie_domain = ".example.com"
   server1_hostname = "oam1" + cookie_domain
   server2_hostname = "oam2" + cookie_domain
-  root_suffix = "o=openam,dc=firstpointglobal,dc=com",
+  root_suffix = "o=openam,dc=example,dc=com",
   encryption_key = "+bWQiIorIEtulJFcDROx00jh62H5p+LU",
   admin_password = "1234qwer",
   policy_agent_password = "pa1234qwer",
   config_store_password = "cs1234qwer",
   lb_site_name = "oamlb"
-  lb_primary_url = "http://oamlb.firstpointglobal.com:8080/signon"
-  # lb_primary_url = "https://oamlb.firstpointglobal.com:8443/signon"
+  lb_primary_url = "http://oamlb.example.com:8080/signon"
+  # lb_primary_url = "https://oamlb.example.com:8443/signon"
 
   config.vm.define :server1 do |server1_config|
     server1_config.vm.customize ["modifyvm", :id, "--memory", "1024"]
@@ -32,7 +32,7 @@ Vagrant::Config.run do |config|
     server1_config.vm.host_name = server1_hostname
 
     server1_config.vm.provision :ansible do |ansible|
-      ansible.playbook = "/Users/fpg/Documents/cm/openam/playbooks/setup.yml"
+      ansible.playbook = "$HOME/Documents/orchestration/openam/playbooks/setup.yml"
 
       # avoid using an ansible inventory file
       ansible.hosts = ip
@@ -51,7 +51,7 @@ Vagrant::Config.run do |config|
         tools: "yes",
         headless: "yes",
         lb_site_name: "oamlb",
-        lb_primary_url: "https://oamlb.firstpointglobal.com:8443/signon"
+        lb_primary_url: "https://oamlb.example.com:8443/signon"
         # container_keypass
         # container_storepass
         # container_ssl
@@ -67,14 +67,14 @@ Vagrant::Config.run do |config|
     oam2_ip = "10.0.0.5"
 
     oam2_config.vm.network :hostonly, oam2_ip
-    oam2_config.vm.host_name = "oam2.firstpointglobal.com"
+    oam2_config.vm.host_name = "oam2.example.com"
 
     # TODO: automatically grab this definition from the vm below
-    oam2_existing_host_name = "server1.firstpointglobal.com"
+    oam2_existing_host_name = "server1.example.com"
     # oam2_existing_host_name = config.vm.server1.host_name
 
     oam2_config.vm.provision :ansible do |ansible|
-      ansible.playbook = "/Users/fpg/Documents/cm/openam/playbooks/setup.yml"
+      ansible.playbook = "$HOME/Documents/orchestration/openam/playbooks/setup.yml"
 
       # avoid using an ansible inventory file
       ansible.hosts = oam2_ip
@@ -84,8 +84,8 @@ Vagrant::Config.run do |config|
       ansible.extra_vars = {
         hosts: oam2_ip,
         openam_hostname: oam2_config.vm.host_name,
-        openam_cookie_domain: ".firstpointglobal.com",
-        openam_root_suffix: "o=openam,dc=firstpointglobal,dc=com",
+        openam_cookie_domain: ".example.com",
+        openam_root_suffix: "o=openam,dc=example,dc=com",
         openam_tools: "yes",
         openam_encryption_key: "+bWQiIorIEtulJFcDROx00jh62H5p+LU",
         openam_admin_password: "1234qwer",
@@ -96,7 +96,7 @@ Vagrant::Config.run do |config|
         openam_existing_id: "http://" + oam2_existing_host_name + ":8080/signon",
         # TODO: automatically grab this definition from the vm below
         openam_lb_site_name: "oamlb",
-        openam_lb_primary_url: "https://oamlb.firstpointglobal.com:8443/signon"
+        openam_lb_primary_url: "https://oamlb.example.com:8443/signon"
       }
 
       ansible.options = "-vv"
@@ -107,11 +107,11 @@ Vagrant::Config.run do |config|
   #   oamlb_config.vm.customize ["modifyvm", :id, "--memory", "512"]
 
   #   oamlb_config.vm.network :hostonly, "10.0.0.3"
-  #   oamlb_config.vm.host_name = "oamlb.firstpointglobal.com"
+  #   oamlb_config.vm.host_name = "oamlb.example.com"
 
   #   oamlb_config.vm.provision :ansible do |ansible|
   #     # specify the playbook to run
-  #     ansible.playbook = "/Users/fpg/Documents/cm/haproxy/playbooks/setup.yml"
+  #     ansible.playbook = "$HOME/Documents/orchestration/haproxy/playbooks/setup.yml"
 
   #     # avoid using an ansible inventory file
   #     ansible.hosts = "10.0.0.3"

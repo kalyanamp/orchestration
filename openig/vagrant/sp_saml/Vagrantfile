@@ -12,7 +12,7 @@ Vagrant::Config.run do |config|
 
   config.vm.define :oig1 do |v|
     v.vm.network :hostonly, "10.0.0.2"
-    v.vm.host_name = "oig1.firstpointglobal.com"
+    v.vm.host_name = "oig1.example.com"
 
     # v.vm.provision :ansible do |ansible|
     #   # add this to the hosts that ansible manages

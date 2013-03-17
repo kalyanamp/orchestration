@@ -9,17 +9,17 @@ Vagrant::Config.run do |config|
   config.vm.customize ["modifyvm", :id, "--cpus", "1"]
 
   # default openam cluster configuration
-  cookie_domain = ".firstpointglobal.com"
+  cookie_domain = ".example.com"
   server1_hostname = "oam1" + cookie_domain
   server2_hostname = "oam2" + cookie_domain
   deployment_uri = "/signon"
-  root_suffix = "o=openam,dc=firstpointglobal,dc=com"
+  root_suffix = "o=openam,dc=example,dc=com"
   encryption_key = "+bWQiIorIEtulJFcDROx00jh62H5p+LU"
   admin_password = "1234qwer"
   policy_agent_password = "pa1234qwer"
   config_store_password = "cs1234qwer"
   lb_site_name = "oamlb"
-  lb_hostname = "oamlb.firstpointglobal.com"
+  lb_hostname = "oamlb.example.com"
   lb_primary_url = "http://" + lb_hostname + ":8080/" + deployment_uri
   container_keypass = "changeit"
   container_storepass = "changeit"
@@ -108,7 +108,7 @@ Vagrant::Config.run do |config|
     site_config.vm.customize ["modifyvm", :id, "--memory", "512"]
 
     site_config.vm.network :hostonly, "10.0.0.3"
-    site_config.vm.host_name = "oamlb.firstpointglobal.com"
+    site_config.vm.host_name = "oamlb.example.com"
 
     site_config.vm.provision :ansible do |ansible|
       # add this to the hosts that ansible manages
