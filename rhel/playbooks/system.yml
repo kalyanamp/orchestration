@@ -1,0 +1,93 @@
+---
+
+# TODO: look at bak/provision dir
+# TODO: make this work across production and dev environments (for eg. on ec2)
+# TODO: consider allowing for creation of an extra user for a production env (ie. not vagrant)
+# NOTE: vagrant tool manages hostnames. if $hostname is passed in, that hostname will be set
+# NOTE: if production is passed in, extra security will be done (eg. iptables won't be disabled)
+
+# TODO: test this with vagrant
+# TODO: review the included ntp pool conf file and figure out a median for your servers
+# TODO: likewise, use a template hosts file for your servers
+# TODO: verify the sha1 checksums available for downloads (see here for details: http://downloads.raspberrypi.org/verifying_an_image.html)
+# shasum ~/Downloads/2013-02-09-wheezy-raspbian.zip | cut -d ' ' -f 1
+# TODO: generate a private key for me on this dev instance
+
+- name: configure the system (vagrant will manage hostnames)
+  hosts: $hosts
+  gather_facts: no
+
+  vars:
+    - firewall_service: iptables
+    - timezone: Australia/Sydney
+    # - production: yes
+
+  tasks:
+    - name: immediately update the hostname
+      command: hostname -v ${hostname}
+      when_set: $hostname
+
+    - name: persist the hostname
+      lineinfile: dest=/etc/sysconfig/network
+                  regexp=^HOSTNAME=
+                  line=HOSTNAME=${hostname}
+                  state=present
+      when_set: $hostname
+
+    - name: add the hostname to the hosts file
+      lineinfile: dest=/etc/hosts
+                  regexp="^127.0.0.1    $hostname"
+                  line="127.0.0.1    $hostname"
+                  state=present
+      when_set: $hostname
+
+    # TODO: instead of deleting first, try to find a way to verify first
+    - name: symlink the correct localtime - 1
+      file: path=/etc/localtime
+            state=absent
+
+    - name: symlink the correct localtime - 2
+      file: src=/usr/share/zoneinfo/${timezone}
+            dest=/etc/localtime
+            state=link
+
+    - name: update the clock config
+      lineinfile: dest=/etc/sysconfig/clock
+                  regexp=^ZONE=
+                  line=ZONE=${timezone}
+                  state=present
+
+    - name: disable firewall now and after reboots
+      service: name=$firewall_service
+               state=stopped
+               enabled=no
+      when_unset: $production
+
+    # TODO: should exist by default on the image, confirm
+    # - name: install sudo
+    #   yum: name=sudo
+    #        state=installed
+    #   when_set: $sudo_user
+
+    - name: create a privileged account for $sudo_user
+      user: name=$sudo_user
+            groups=wheel
+            state=present
+      when_set: $sudo_user
+
+    - name: transfer public key for $sudo_user
+      authorized_key: user=$sudo_user
+                      key="$sudo_pub_key"
+      when_set: $sudo_user
+
+    - name: find out the linux distribution
+      debug: msg="linux distribution - $ansible_distribution"
+
+    - name: find out the architecture
+      debug: msg="architecture - $ansible_architecture"
+
+    - name: find out the system
+      debug: msg="system - $ansible_system"
+
+    - name: find out the kernel
+      debug: msg="kernel - $ansible_kernel"

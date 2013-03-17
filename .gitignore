@@ -1,13 +1,9 @@
 .DS_Store
 ansible_hosts
 bak/
-dev/dev_hosts
-dev/secret/
+dev/
 group_vars/
+host_vars/
 notes/
-openam/bak/
-openam/files/
-openam/secret/
-openam_fpg/openam_fpg_hosts
-openam_fpg/secret/
-secret/
+files/
+.vagrant

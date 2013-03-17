@@ -1,0 +1,11 @@
+---
+
+- name: set up a centralised logging system with logstash and kibana
+  hosts: $hosts
+  gather_facts: no
+
+- include: system.yml
+- include: elasticsearch.yml
+- include: logstash.yml
+- include: kibana.yml
+# - include: graylog2.yml

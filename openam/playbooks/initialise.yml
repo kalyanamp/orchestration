@@ -1,0 +1,64 @@
+---
+
+# this playbook verifies the openam installation, does some default configuration, and creates a clustered site configuration
+#
+# following this, subsequent openam servers can be launched and joined to the cluster
+
+# TODO: make this work when the first server is set up in a sole lb config
+# TODO: enable ssoadm.jsp in the browser
+# TODO: restart tomcat after joining a server to a site (and test if that's required via ssoadm)
+
+- hosts: $hosts
+  gather_facts: no
+
+  vars_files:
+    - ../vars/openam.yml
+
+  vars:
+    - server_name: $server_url$deployment_uri
+    - password_file: /tmp/password.txt
+    - admin_creds: --adminid amadmin --password-file $password_file
+    - ssoadm_bin: $tools_dir$deployment_uri/bin/ssoadm
+
+  tasks:
+
+    - name: create the password file
+      shell: echo $admin_password > $password_file
+             creates=$password_file
+
+    - name: set the permissions for the password file
+      file: path=$password_file mode=0400
+
+    - name: verify this openam server
+      command: $ssoadm_bin list-servers $admin_creds
+
+    # NOTE: you can refer to the "default" server as well as individual ones
+    - name: enable debugging by default
+      command: $ssoadm_bin update-server-cfg $admin_creds --servername $server_name --attributevalues "com.iplanet.services.debug.level=message"
+
+    - name: list server config
+      # command: $ssoadm_bin list-server-cfg $admin_creds --servername $server_name --withdefaults
+      command: $ssoadm_bin list-server-cfg $admin_creds --servername $server_name
+
+    # TODO: move out to a specific config yml
+    - name: create a site configuration (a load balancer and openam servers in a cluster)
+      command: $ssoadm_bin create-site $admin_creds --sitename $lb_site_name --siteurl $lb_primary_url
+      when_set: $lb_site_name
+
+    # TODO: move out to a specific config yml
+    - name: verify the site configuration
+      command: $ssoadm_bin show-site $admin_creds --sitename $lb_site_name
+      when_set: $lb_site_name
+
+    # TODO: move out to a specific config yml
+    - name: add this openam server to the site
+      command: $ssoadm_bin add-site-members $admin_creds --sitename $lb_site_name --servernames $server_name
+      when_set: $lb_site_name
+
+    # TODO: move out to a specific config yml
+    - name: verify the site members
+      command: $ssoadm_bin show-site-members $admin_creds --sitename $lb_site_name
+      when_set: $lb_site_name
+
+    - name: clean up the password file for security reasons
+      file: path=$password_file state=absent

@@ -1,0 +1,155 @@
+---
+
+# - production: yes (unset)
+
+# TODO: install jetty if it's in the epel (check)
+
+# other packages: git, ruby, ruby-devel, python, etc., rubygems, rake, openssl-devel, etc
+
+- name: install system packages
+  hosts: $hosts
+  gather_facts: yes
+
+  vars:
+    - firewall_service: iptables
+    - group_packages:
+      - @base
+      - @development
+      - @java-platform
+      - @java-platform-devel
+        # # TODO: check which of these are already in base and remove
+    - standard_packages:
+      - ntp
+      - htop
+      - iotop
+      - etc
+        #ansible-node-fireball
+        #     - man
+        #     - mlocate
+        #     - dig
+        #     - zip
+        #     - unzip
+        #     - wget
+        #     - ack
+        #     - whois
+        #     - nc
+        #     - telnet
+        #     - htop
+        #     - iftop
+        #     - iotop
+        #     # - ntop
+        #     - atop
+        #     - lsof
+        #     - ifstat
+        #     - iptraf
+        #     - nethogs
+        #     - dstat
+        #     - sysstat
+        #     - traceroute
+        #     - mtr
+        #     - vim-enhanced
+        #     - tmux
+        #     # - java-1.6.0-openjdk-devel
+        #     # - tomcat6
+        #     # - fortune-mod
+        #     # - sl
+        #     # - cowsay
+        #   # when_set: ${install_tools}
+      - services:
+        - tomcat6
+        - ntp
+
+  tasks:
+    - name: update yum packages
+      command: yum --assumeyes update
+
+    - name: check if the epel repo is installed
+      command: rpm -q epel-release
+      register: epel_package
+      ignore_errors: yes
+
+    # FIXME
+    - name: show if epel repo is installed
+      debug: msg="epel_package = $epel_package"
+
+    # FIXME
+    # TODO: see how to import the key first to avoid errors
+    # http://ansible.cc/docs/playbooks2.html#register-variables
+    - name: install the epel repository (not needed by fedora)
+      command: rpm -Uvh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+      # when_string: $ansible_distribution != "Fedora" and $ansible_kernel != "3.2.30-49.59.amzn1.x86_64"
+      # TODO: look at ec2_facts to see if it can help figure uout if this is an ec2 instance, or maybe there's another way
+      # when_string: $ansible_distribution != "Fedora" and "'is not installed' in $epel_package.stdout"
+      ignore_errors: yes
+
+    - name: install default packages
+      yum: name=@base
+           state=latest
+
+    - name: install group packages
+      yum: name=$item
+           state=latest
+      with_items: $group_packages
+
+    - name: install standard packages
+      yum: name=$item
+           state=latest
+      with_items: $standard_packages
+
+    - name: install bundler gem for ruby packages
+      gem: name=bundler
+           state=latest
+
+    - name: start services now and after reboots
+      service: name=$item
+               state=started
+               enabled=yes
+      with_items: services
+
+    # TODO: should be able to just use the default ntp servers, confirm
+    # - name: configure local ntp servers
+    #   template: src=$ntp_file
+    #             dest=/etc/ntp.conf
+    #             backup=yes
+    #   when_set: $ntp_file
+
+    # # TODO: find a way to enable the epel repo (while still make this skip epel for fedora)
+    # # TODO: which ones would be missing after the @base groupinstall?
+    # - name: install system tools 
+    #   yum: name=$item enablerepo=epel state=latest
+    #   with_items:
+    #     - net-tools
+    #     - man
+    #     - zip
+    #     - unzip
+    #     - wget
+    #     - curl
+    #     - ack
+    #     - vim-enhanced
+    #     - tmux
+    #     - ansible-node-fireball
+    #   when_set: $install_system
+
+    # # TODO: find a way to enable the epel repo (while still make this skip epel for fedora)
+    # # TODO: which ones would be missing after the @base groupinstall?
+    # - name: install monitoring tools
+    #   yum: name=$item enablerepo=epel state=latest
+    #   with_items:
+    #     - mlocate
+    #     - jwhois
+    #     - nc
+    #     - telnet
+    #     - htop
+    #     - iftop
+    #     - iotop
+    #     - ntop
+    #     - atop
+    #     - lsof
+    #     - ifstatus
+    #     - iptraf
+    #     - nethogs
+    #     - dstat
+    #     - sysstat
+    #     - traceroute
+    #     - mtr
+    #   when_set: $install_monitoring

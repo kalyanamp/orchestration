@@ -1,21 +1,31 @@
 ---
 
-- hosts: ${hosts}
-  user: root
+# TODO: find an init script (there's one for centos)
+
+- hosts: $hosts
   gather_facts: no
+
+  vars_files:
+    - ../vars/logstash.yml
+
+  vars:
+    kibana_version: 0.2.0
+    kibana_dir: $install_dir/kibana
+    kibana_archive: https://github.com/rashidkpc/Kibana/archive/v0.2.0.zip
 
   tasks:
 
     - name: download kibana
-      get_url: url=${kibana_archive} dest=${artefact_dir}/kibana-${kibana_version}.zip
+      get_url: url=$kibana_archive dest=$artefact_dir/kibana-$kibana_version.zip
 
     - name: unzip kibana archive
-      command: unzip -qo ${artefact_dir}/kibana-${kibana_version}.zip -d /opt
+      command: unzip -qo $artefact_dir/kibana-$kibana_version.zip -d /opt
 
     - name: create a symbolic link
-      file: src=/opt/Kibana-${kibana_version}
-            dest=${kibana_dir}
+      file: src=/opt/Kibana-$kibana_version
+            dest=$kibana_dir
             state=link
 
     - name: install and lock all required gems
-      shell: cd ${kibana_dir} && bundle install
+      command: bundle install
+               chdir=$kibana_dir

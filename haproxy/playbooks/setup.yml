@@ -1,0 +1,43 @@
+---
+
+# TODO: review
+# ssl and other deployment options: http://blog.exceliance.fr/2012/09/04/howto-ssl-native-in-haproxy/ (although yum should take care of it)
+# https://tech.shareaholic.com/2012/10/26/haproxy-a-substitute-for-amazon-elb/
+# http://www.igvita.com/2008/05/13/load-balancing-qos-with-haproxy/
+# http://readystate4.com/2012/11/22/amazon-elastic-load-balancer-vs-haproxy/
+# http://iamseanmurphy.com/a-better-haproxy-health-check-for-dynamic-websites/
+# https://support.eapps.com/index.php?/Knowledgebase/Article/View/394/71/user-guide---basic-http-load-balancing-with-haproxy
+
+# TODO: figure out how to pass through ssl with haproxy (probably needs to be terminated for sticky sessions though)
+
+- name: set up haproxy
+  hosts: $hosts
+  gather_facts: no
+
+  vars:
+    - firewall_service: iptables
+
+  handlers:
+    - include: ../handlers/restart.yml
+
+  tasks:
+
+    - name: set up haproxy
+      yum: name=haproxy
+           state=present
+
+    # - name: transfer the configuration
+    #   template: src=../templates/haproxy.cfg
+    #             dest=/etc/haproxy/haproxy.cfg
+    #             mode=0644
+    #   notify: restart haproxy
+
+    - name: enable and start the service
+      service: name=haproxy
+               enabled=yes
+               state=started
+
+    - name: disable firewall now and after reboots
+      service: name=$firewall_service
+               state=stopped
+               enabled=no

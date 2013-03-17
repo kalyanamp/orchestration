@@ -1,6 +1,0 @@
----
-
-- hosts: ${hosts}
-
-  tasks:
-    - include: tasks/configure.yml

@@ -1,0 +1,136 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require "vagrant-ansible"
+
+Vagrant::Config.run do |config|
+  # default vm configuration
+  config.vm.box = "centos63"
+  config.vm.customize ["modifyvm", :id, "--cpus", "1"]
+
+  # default openam cluster configuration
+  cookie_domain = ".firstpointglobal.com"
+  server1_hostname = "oam1" + cookie_domain
+  server2_hostname = "oam2" + cookie_domain
+  deployment_uri = "/signon"
+  root_suffix = "o=openam,dc=firstpointglobal,dc=com"
+  encryption_key = "+bWQiIorIEtulJFcDROx00jh62H5p+LU"
+  admin_password = "1234qwer"
+  policy_agent_password = "pa1234qwer"
+  config_store_password = "cs1234qwer"
+  lb_site_name = "oamlb"
+  lb_hostname = "oamlb.firstpointglobal.com"
+  lb_primary_url = "http://" + lb_hostname + ":8080/" + deployment_uri
+  container_keypass = "changeit"
+  container_storepass = "changeit"
+
+  config.vm.define :server1 do |server1_config|
+    server1_config.vm.customize ["modifyvm", :id, "--memory", "1024"]
+
+    server1_config.vm.network :hostonly, "10.0.0.4"
+    server1_config.vm.host_name = server1_hostname
+
+    server1_config.vm.provision :ansible do |ansible|
+      # add this to the hosts that ansible manages
+      ansible.hosts = server1_config.vm.host_name
+
+      ansible.playbook = "../../playbooks/setup.yml"
+
+      ansible.sudo = "yes"
+
+      # pass in required and optional build variables
+      ansible.extra_vars = {
+        hosts: server1_config.vm.host_name,
+        hostname: server1_hostname,
+        cookie_domain: cookie_domain,
+        deployment_uri: deployment_uri,
+        root_suffix: root_suffix,
+        encryption_key: encryption_key,
+        admin_password: admin_password,
+        policy_agent_password: policy_agent_password,
+        config_store_password: config_store_password,
+        tools: "yes",
+        headless: "yes",
+        lb_site_name: lb_site_name,
+        lb_primary_url: lb_primary_url,
+        container_ssl: "yes",
+        container_keypass: container_keypass,
+        container_storepass: container_storepass
+      }
+
+      # enable verbose output
+      ansible.options = "-vv"
+    end
+  end
+
+  config.vm.define :server2 do |server2_config|
+    server2_config.vm.customize ["modifyvm", :id, "--memory", "1024"]
+
+    server2_config.vm.network :hostonly, "10.0.0.5"
+    server2_config.vm.host_name = server2_hostname
+
+    server2_config.vm.provision :ansible do |ansible|
+      # add this to the hosts that ansible manages
+      ansible.hosts = server2_config.vm.host_name
+
+      ansible.playbook = "../../playbooks/setup.yml"
+
+      ansible.sudo = "yes"
+
+      # pass in required and optional build variables
+      ansible.extra_vars = {
+        hosts: server2_config.vm.host_name,
+        hostname: server2_hostname,
+        cookie_domain: cookie_domain,
+        deployment_uri: deployment_uri,
+        root_suffix: root_suffix,
+        encryption_key: encryption_key,
+        admin_password: admin_password,
+        policy_agent_password: policy_agent_password,
+        config_store_password: config_store_password,
+        tools: "yes",
+        join_cluster: "yes",
+        existing_server_hostname: server1_hostname,
+        existing_server_id: "http://" + server1_hostname + ":8080/signon",
+        lb_site_name: lb_site_name,
+        lb_primary_url: lb_primary_url,
+        container_ssl: "yes",
+        container_keypass: container_keypass,
+        container_storepass: container_storepass
+      }
+
+      # enable verbose output
+      ansible.options = "-vv"
+    end
+  end
+
+  config.vm.define :site do |site_config|
+    site_config.vm.customize ["modifyvm", :id, "--memory", "512"]
+
+    site_config.vm.network :hostonly, "10.0.0.3"
+    site_config.vm.host_name = "oamlb.firstpointglobal.com"
+
+    site_config.vm.provision :ansible do |ansible|
+      # add this to the hosts that ansible manages
+      ansible.hosts = site_config.vm.host_name
+
+      ansible.playbook = "../../../haproxy/playbooks/setup.yml"
+
+      ansible.sudo = "yes"
+
+      # pass in required and optional build variables
+      ansible.extra_vars = {
+        hosts: site_config.vm.host_name,
+        server1_hostname: server1_hostname,
+        server2_hostname: server2_hostname,
+        container_port: "8080",
+        stats_user: "foo",
+        stats_password: "bar"
+      }
+
+      # enable verbose output
+      ansible.options = "-vv"
+    end
+  end
+
+end

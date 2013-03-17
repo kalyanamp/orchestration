@@ -6,45 +6,52 @@
 # TODO: investigate java startup/shutdown service handler
 # TODO: modify graylog2ctl file to point to conf in /opt dir
 
-- hosts: ${hosts}
+# # graylog2
+# graylog2_version: 0.10.0-rc.3
+# graylog2_server_dir: /opt/graylog2-server
+# graylog2_web_dir: /opt/graylog2-web
+# graylog2_server_archive: http://download.graylog2.org/graylog2-server/graylog2-server-0.10.0-rc.3.tar.gz
+# graylog2_web_archive: http://download.graylog2.org/graylog2-web-interface/graylog2-web-interface-0.10.0-rc.3.tar.gz
+
+- hosts: $hosts
   user: root
   gather_facts: no
 
   tasks:
 
     - name: download graylog2 server
-      get_url: url=${graylog2_server_archive} dest=${artefact_dir}
+      get_url: url=$graylog2_server_archive dest=$artefact_dir
 
     - name: download graylog2 web
-      get_url: url=${graylog2_web_archive} dest=${artefact_dir}
+      get_url: url=$graylog2_web_archive dest=$artefact_dir
 
     - name: untar server archive
-      command: tar -zxf ${artefact_dir}/graylog2-server-${graylog2_version}.tar.gz -C /opt
+      command: tar -zxf $artefact_dir/graylog2-server-$graylog2_version.tar.gz -C /opt
 
     - name: untar web archive
-      command: tar -zxf ${artefact_dir}/graylog2-web-interface-${graylog2_version}.tar.gz -C /opt
+      command: tar -zxf $artefact_dir/graylog2-web-interface-$graylog2_version.tar.gz -C /opt
 
     - name: create a symbolic link for server
-      file: src=/opt/graylog2-server-${graylog2_version}
-            dest=${graylog2_server_dir}
+      file: src=/opt/graylog2-server-$graylog2_version
+            dest=$graylog2_server_dir
             state=link
 
     - name: create a symbolic link for web
-      file: src=/opt/graylog2-web-interface-${graylog2_version}
-            dest=${graylog2_web_dir}
+      file: src=/opt/graylog2-web-interface-$graylog2_version
+            dest=$graylog2_web_dir
             state=link
 
     - name: create server conf dir
-      file: path=${graylog2_server_dir}/conf
+      file: path=$graylog2_server_dir/conf
             state=directory
 
     # TODO: temporary, improve
     - name: copy server conf file
-      command: cp ${graylog2_server_dir}/graylog2.conf.example ${graylog2_server_dir}/graylog2.conf
+      command: cp $graylog2_server_dir/graylog2.conf.example $graylog2_server_dir/graylog2.conf
 
     # TODO: temporary, improve
     - name: copy server elasticsearch conf file
-      command: cp ${graylog2_server_dir}/elasticsearch.yml.example ${graylog2_server_dir}/elasticsearch.yml
+      command: cp $graylog2_server_dir/elasticsearch.yml.example $graylog2_server_dir/elasticsearch.yml
 
     - name: install and lock all required gems for web
-      shell: cd ${graylog2_web_dir} && bundle install
+      shell: cd $graylog2_web_dir && bundle install

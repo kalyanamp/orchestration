@@ -1,0 +1,8 @@
+---
+
+- name: set up a general purpose, virtual red hat based system (rhel, centos, fedora)
+  hosts: $hosts
+  gather_facts: no
+
+- include: system.yml
+- include: packages.yml

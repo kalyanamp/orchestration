@@ -1,0 +1,39 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require "vagrant-ansible"
+
+Vagrant::Config.run do |config|
+
+  # default vm configuration
+  config.vm.box = "centos63"
+  config.vm.customize ["modifyvm", :id, "--memory", "1024"]
+  config.vm.customize ["modifyvm", :id, "--cpus", "1"]
+
+  config.vm.define :ls1 do |ls1_config|
+    ls1_config.vm.network :hostonly, "10.0.0.2"
+    ls1_config.vm.host_name = "ls1.firstpointglobal.com"
+
+    ls1_config.vm.provision :ansible do |ansible|
+      # add this to the hosts that ansible manages
+      ansible.hosts = ls1_config.vm.host_name
+
+      ansible.playbook = "../../playbooks/setup.yml"
+
+      ansible.sudo = "yes"
+
+      # pass in required and optional build variables
+      # some variables you might want to override:
+      # - <product>_version
+      # - logstash_memory
+      ansible.extra_vars = {
+        hosts: ls1_config.vm.host_name,
+        logstash_memory: "128M"
+      }
+
+      # enable verbose output
+      ansible.options = "-vv"
+      # ansible.options = "--connection=fireball", "-vvv"
+    end
+  end
+end

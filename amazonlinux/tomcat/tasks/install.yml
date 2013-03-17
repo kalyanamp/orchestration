@@ -1,7 +1,0 @@
----
-
-- name: install tomcat7
-  yum: name=tomcat7 state=latest
-
-- name: start tomcat7 after reboots
-  service: name=tomcat7 enabled=yes

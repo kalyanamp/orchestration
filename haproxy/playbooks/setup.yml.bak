@@ -1,0 +1,77 @@
+---
+
+# haproxy is available in rhel 6.4 repos and will be available in centos 6.4 (can just use yum)
+
+# TODO: review
+# ssl and other deployment options: http://blog.exceliance.fr/2012/09/04/howto-ssl-native-in-haproxy/ (although yum should take care of it)
+# https://tech.shareaholic.com/2012/10/26/haproxy-a-substitute-for-amazon-elb/
+# http://www.igvita.com/2008/05/13/load-balancing-qos-with-haproxy/
+# http://readystate4.com/2012/11/22/amazon-elastic-load-balancer-vs-haproxy/
+# http://iamseanmurphy.com/a-better-haproxy-health-check-for-dynamic-websites/
+# https://support.eapps.com/index.php?/Knowledgebase/Article/View/394/71/user-guide---basic-http-load-balancing-with-haproxy
+
+# TODO: figure out how to pass through ssl with haproxy (probably needs to be terminated for sticky sessions though)
+
+- name: set up haproxy
+  hosts: $hosts
+  gather_facts: no
+
+  vars:
+    - haproxy_version: 1.4.22
+    - haproxy_archive: http://haproxy.1wt.eu/download/1.4/src/haproxy-1.4.22.tar.gz
+    - firewall_service: iptables
+
+  handlers:
+    - include: ../handlers/restart.yml
+
+  tasks:
+
+    - name: download the archive
+      get_url: url=$haproxy_archive
+               dest=/tmp
+
+    - name: extract the source archive
+      command: tar zxvf /tmp/haproxy-$haproxy_version.tar.gz -C /tmp
+               creates=/tmp/haproxy-$haproxy_version
+
+    - name: build the binary
+      command: make TARGET=linux2628
+               chdir=/tmp/haproxy-$haproxy_version
+               creates=/tmp/haproxy-$haproxy_version/haproxy
+
+    - name: copy the binary
+      command: cp /tmp/haproxy-$haproxy_version/haproxy /usr/sbin
+               creates=/usr/sbin/haproxy
+
+    - name: create the configuration dir
+      file: path=/etc/haproxy
+            state=directory
+
+    - name: transfer the configuration
+      template: src=../templates/haproxy.cfg
+                dest=/etc/haproxy/haproxy.cfg
+                mode=0644
+      notify: restart haproxy
+
+    - name: copy the error files
+      command: cp -r /tmp/haproxy-$haproxy_version/examples/errorfiles /etc/haproxy/errors
+               creates=/etc/haproxy/errors
+
+    - name: copy the init script
+      command: cp /tmp/haproxy-$haproxy_version/examples/haproxy.init /etc/init.d/haproxy
+               creates=/etc/init.d/haproxy
+
+    - name: make the init script executable
+      file: path=/etc/init.d/haproxy
+            mode=0755
+            state=file
+
+    - name: enable and start the service
+      service: name=haproxy
+               enabled=yes
+               state=started
+
+    - name: disable firewall now and after reboots
+      service: name=$firewall_service
+               state=stopped
+               enabled=no

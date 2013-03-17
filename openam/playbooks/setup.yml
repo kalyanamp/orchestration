@@ -1,30 +1,69 @@
 ---
 
-# this playbook orchestrates other playbooks and makes sure a fireball connection is established for subsequent playbooks
+# TODO: default to to the latest 10.1.0.
+# TODO: make encryption_key optional, and required if $join_cluster is set or $lb_name is set. remove from vagrant and test. make a note that this should be set from the beginning (ie for server1) if a clustered configuration is desired.
+# TODO: test initialise.yml
+# TODO: test taking down a (theoretically) unhealthy server and rebuilding it and adding it to the cluster. for maximum effect, this should be the first server in the node. and make changes after bringing it down to see if it will replicate when you bring it back up.
+# TODO: test the upgrade from 10.0.1 to 10.1.0
+# TODO: test with a third server (will need to reboot for that). this could have a console attached, as opposed to the first 2 in a user facing cluster.
+# TODO: add a das component
+# TODO: support 10.0.0 and 10.0.1
+# TODO: build a base vmware centos 6.4 box with java, unzip, tomcat6 (tomcat7 may not be on centos -- check), ansible-fireball-node, etc, so system.yml goes quicker
+# TODO: review these:
+# http://wiki.opencsi.com/public/bin/view/OpenAM/SilentInstallation
+# http://blog.profiq.cz/2012/01/19/automated-installation-and-configuration-of-openam/
+# https://github.com/ConductAS/puppet-openam
+# https://github.com/dgardnersf/puppet-openam
 
-# TODO: figure out how to make ansible verbose from vagrant
+# assumptions: openam 10.1.0. embedded opendj config store. no user stores or
+# further config. non production. red hat based systems. tomcat6. 1,024mb jvm.
+#
+# a default initialise playbook exists for some basic settings, mainly around
+# verification, load balancing, and debugging. any further config or
+# customisation (eg. custom auth modules, custom login pages, etc.) should go
+# in specific playbooks for your own setup (ie. one or more configuration.yml
+# files).
+#
+# the following build vars are optional (and disabled by default):
+#
+# - headless (any value to enable)
+# - tools (any value to enable)
+# - diagnostics (any value to enable)
+# - join_cluster (any value to enable)
+#     - existing_server_hostname (when join_cluster is enabled)
+#     - existing_server_id (when join_cluster is enabled)
+# - java_opts (defaults to -Xmx1024m -XX:MaxPermSize=256m)
+# - lb_site_name (for clustered configurations)
+# - lb_primary_url (for clustered configurations)
+# - container_ssl (any value to enable)
+#     - container_storepass (when container_ssl is enabled)
+#     - container_keypass (when container_ssl is enabled)
 
-- name: set up openam replicating hda's uat environment
+- name: set up openam
   hosts: $hosts
-  user: vagrant
-  sudo: yes
   gather_facts: no
 
-  vars_files:
-    - ../vars/openam.yml
+  vars:
+    - build_vars:
+      - $hostname
+      - $cookie_domain
+      - $deployment_uri
+      - $root_suffix
+      # - $encryption_key
+      - $admin_password
+      - $policy_agent_password
+      - $config_store_password
 
-  # quick fireball, if specified
-  # connection: ssh
-  # tasks:
-  #   - name: start/renew fireball connection
-  #     action: fireball
-  #     when_string: $connection == "fireball"
+  tasks:
 
-# - include: ../fireball.yml
+    - name: fail if required build vars are unset
+      fail: msg="var $item unset, please set all required build variables"
+      with_items:
+        - $build_vars
+      when_unset: $item
+
 # - include: system.yml
 # - include: install.yml
-# - include: tools.yml
-# - include: docs.yml
-- include: configure.yml
+- include: initialise.yml
 # - include: upgrade.yml
 # - include: uninstall.yml

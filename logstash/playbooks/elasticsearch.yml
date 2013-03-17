@@ -1,25 +1,33 @@
 ---
 
-# TODO: transfer startup shell script for stash
-# TODO: fix file/dir ownerships and permissions
-# TODO: investigate java startup/shutdown service handler
+# TODO: find an init script (there's one for centos)
 
-- hosts: ${hosts}
-  user: root
+- hosts: $hosts
   gather_facts: no
+
+  vars_files:
+    - ../vars/logstash.yml
+
+  vars:
+    elasticsearch_version: 0.20.0
+    elasticsearch_dir: $install_dir/elasticsearch
+    elasticsearch_archive: http://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-$elasticsearch_version.zip
 
   tasks:
 
     - name: download elasticsearch
-      get_url: url=${elasticsearch_archive} dest=${artefact_dir}
+      get_url: url=$elasticsearch_archive dest=$artefact_dir
 
     - name: unzip elasticsearch archive
-      command: unzip -qo ${artefact_dir}/elasticsearch-${elasticsearch_version}.zip -d /opt
+      command: unzip -qo $artefact_dir/elasticsearch-$elasticsearch_version.zip -d /opt
+
+    - name: fix elasticsearch permissions
+      command: chmod -R go-w /opt/elasticsearch-$elasticsearch_version
 
     - name: create a symbolic link
-      file: src=/opt/elasticsearch-${elasticsearch_version}
-            dest=${elasticsearch_dir}
+      file: src=/opt/elasticsearch-$elasticsearch_version
+            dest=$elasticsearch_dir
             state=link
 
     - name: start elasticsearch
-      command: ${elasticsearch_dir}/bin/elasticsearch
+      command: $elasticsearch_dir/bin/elasticsearch

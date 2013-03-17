@@ -3,76 +3,79 @@
 # NOTE: back up any customisations in the deployed webapp
 # NOTE: keep the first server running while upgrading subsequent servers in a cluster
 # NOTE: temporarily remove servers from load balancers during upgrades
-# NOTE: check out the upgrade report in ${openam_config_dir}/upgrade/
+# NOTE: check out the upgrade report in $openam_config_dir/upgrade/
 
-- hosts: ${hosts}
+# openam_upgrade_version: 10.1.0-SNAPSHOT
+# openam_upgrade_archive: http://download.forgerock.org/downloads/openam/openam-distribution-kit-10.1.0-SNAPSHOT_nightly_20130112.zip
+
+- hosts: $hosts
 
   tasks:
 
     - name: download new openam
-      get_url: url=${openam_upgrade_archive} dest=${artefact_dir}
-      when_boolean: not ${openam_transfer}
+      get_url: url=$openam_upgrade_archive dest=$artefact_dir
+      when_boolean: not $openam_transfer
 
     - name: transfer new openam
-      copy: src=/Users/fpg/Documents/bin/openam/openam_${openam_upgrade_version}.zip dest=${artefact_dir}
-      when_boolean: ${openam_transfer}
+      copy: src=/Users/fpg/Documents/bin/openam/openam_$openam_upgrade_version.zip dest=$artefact_dir
+      when_boolean: $openam_transfer
 
     - name: install unzip
       yum: name=unzip state=present
 
     - name: unzip new openam
-      # command: unzip -qo ${artefact_dir}/openam_${openam_upgrade_version}.zip -d /tmp/openam
-      command: unzip -qo ${artefact_dir}/openam-distribution-kit-${openam_upgrade_version}_nightly_20130112.zip -d /tmp/openam
+      # command: unzip -qo $artefact_dir/openam_$openam_upgrade_version.zip -d /tmp/openam
+      command: unzip -qo $artefact_dir/openam-distribution-kit-$openam_upgrade_version_nightly_20130112.zip -d /tmp/openam
 
     - name: backup old admin tools
-      command: mv ${openam_tools_admin} ${openam_home}/ssoAdminTools-orig
+      command: mv $openam_tools_admin $openam_home/ssoAdminTools-orig
       ignore_errors: yes
       tags: tools
 
     - name: unzip new admin tools
-      command: unzip -q /tmp/openam/openam-distribution-ssoadmintools-${openam_upgrade_version}.zip -d ${openam_tools_admin}
+      command: unzip -q /tmp/openam/openam-distribution-ssoadmintools-$openam_upgrade_version.zip -d $openam_tools_admin
       tags: tools
 
     - name: backup old configurator tools
-      command: mv ${openam_tools_configurator} ${openam_home}/ssoConfiguratorTools-orig
+      command: mv $openam_tools_configurator $openam_home/ssoConfiguratorTools-orig
       ignore_errors: yes
       tags: tools
 
     - name: unzip new configurator tools
-      command: unzip -q /tmp/openam/openam-distribution-ssoconfiguratortools-${openam_upgrade_version}.zip -d ${openam_tools_configurator}
+      command: unzip -q /tmp/openam/openam-distribution-ssoconfiguratortools-$openam_upgrade_version.zip -d $openam_tools_configurator
       tags: tools
 
     - name: backup old diagnostic tools
-      command: mv ${openam_tools_diagnostic} ${openam_home}/ssoDiagnosticTools-orig
+      command: mv $openam_tools_diagnostic $openam_home/ssoDiagnosticTools-orig
       ignore_errors: yes
       tags: tools
 
     - name: unzip new diagnostic tools
-      command: unzip -q /tmp/openam/openam-distribution-diagnostics-${openam_upgrade_version}.zip -d ${openam_tools_diagnostic}
+      command: unzip -q /tmp/openam/openam-distribution-diagnostics-$openam_upgrade_version.zip -d $openam_tools_diagnostic
       tags: tools
 
     - name: stop java container
-      service: name=${container_service} state=stopped
+      service: name=$container_service state=stopped
 
     - name: backup old openam config dir
-      command: cp -rp ${openam_config_dir} ${openam_config_dir}-orig
+      command: cp -rp $openam_config_dir $openam_config_dir-orig
 
     - name: move old openam war file
-      command: mv ${container_webapps}${openam_deployment_uri}.war ${container_webapps}${openam_deployment_uri}.war.orig
+      command: mv $container_webapps$openam_deployment_uri.war $container_webapps$openam_deployment_uri.war.orig
 
     - name: move old openam webapp
-      command: mv ${container_webapps}${openam_deployment_uri} ${container_webapps}${openam_deployment_uri}-orig
+      command: mv $container_webapps$openam_deployment_uri $container_webapps$openam_deployment_uri-orig
 
     - name: deploy new war file to java container
-      command: cp -v /tmp/openam/openam-server-${openam_upgrade_version}.war ${container_webapps}${openam_deployment_uri}.war
-      when_boolean: not ${openam_headless}
+      command: cp -v /tmp/openam/openam-server-$openam_upgrade_version.war $container_webapps$openam_deployment_uri.war
+      when_boolean: not $openam_headless
 
     - name: deploy new headless war file to java container
-      command: cp -v /tmp/openam/openam-server-only-${openam_upgrade_version}.war ${container_webapps}${openam_deployment_uri}.war
-      when_boolean: ${openam_headless}
+      command: cp -v /tmp/openam/openam-server-only-$openam_upgrade_version.war $container_webapps$openam_deployment_uri.war
+      when_boolean: $openam_headless
 
     - name: clear container cache dir
-      file: path=${container_cache}${openam_deployment_uri}
+      file: path=$container_cache$openam_deployment_uri
             state=absent
 
     - name: prepare openam upgrade config
@@ -81,14 +84,14 @@
             mode=0400
 
     - name: start java container
-      service: name=${container_service} state=started
+      service: name=$container_service state=started
 
     - name: wait for java container
       wait_for: port=8080 delay=0 timeout=120
 
     - name: upgrade openam with configurator
-      # command: java -jar ${openam_tools_configurator}/upgrade.jar --file /tmp/openam_upgrade.properties
-      command: java -jar ${openam_tools_configurator}/openam-distribution-upgrade-${openam_upgrade_version}.jar --file /tmp/openam_upgrade.properties
+      # command: java -jar $openam_tools_configurator/upgrade.jar --file /tmp/openam_upgrade.properties
+      command: java -jar $openam_tools_configurator/openam-distribution-upgrade-$openam_upgrade_version.jar --file /tmp/openam_upgrade.properties
 
     - name: clean up tmp artefacts
       file: path=/tmp/openam_upgrade.properties state=absent

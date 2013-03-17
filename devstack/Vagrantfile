@@ -1,0 +1,27 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant::configure("2") do |config|
+  config.vm.box = "precise64"
+  config.vm.network :private_network, ip: "10.0.0.2"
+
+  config.vm.provider(:vmware_fusion) do |v|
+    v.vmx["memsize"] = "2048"
+    v.vmx["numvcpus"] = "2"
+    v.vmx["displayName"] = "v_devstack"
+    v.vmx["annotation"] = "vanilla devstack instance"
+  end
+
+  # NOTE: shell provisioning is broken in vagrant 1.1
+  config.vm.provision :shell do |shell|
+    shell.inline = "sudo apt-get -qqy update"
+    shell.inline = "sudo apt-get -qqy install python-netaddr git"
+    shell.inline = "sudo git clone git://github.com/openstack-dev/devstack.git /tmp/devstack"
+    shell.inline = "sudo echo ADMIN_PASSWORD=helloworld > /tmp/devstack/localrc"
+    shell.inline = "sudo echo MYSQL_PASSWORD=helloworld >> /tmp/devstack/localrc"
+    shell.inline = "sudo echo RABBIT_PASSWORD=helloworld >> /tmp/devstack/localrc"
+    shell.inline = "sudo echo SERVICE_PASSWORD=helloworld >> /tmp/devstack/localrc"
+    shell.inline = "sudo echo SERVICE_TOKEN=helloworld >> /tmp/devstack/localrc"
+    shell.inline = "sudo /tmp/devstack/stack.sh"
+  end
+end
