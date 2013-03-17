@@ -6,4 +6,4 @@ group_vars/
 host_vars/
 notes/
 files/
-.vagrant
+.vagrant/
