@@ -1,0 +1,89 @@
+# TODO: set up port forwarding in the vm
+# Setup port forwarding in virtualbox. Shutdown the vm and from a host shell do:
+# you@host$ VBoxManage modifyvm "vagrant-centos62" --natpf1 "guestssh,tcp,,2222,,22"
+
+# 1. install centos, setting root password to vagrant
+# 2. name the vm vagrant-CentOS-6.4-x86_64-minimal-tools
+# 3. login to vm as root/vagrant
+# 4. ifup eth0
+# 5. ifconfig (get the ip and ssh in)
+# 6. add the host to the vmware_hosts file
+# 7. run the playbook. eg -
+#   /opt/ansible/bin/ansible-playbook --verbose --inventory-file ~/Documents/orchestration/boxes/vmware_fusion/vmware_hosts --ask-pass --extra-vars "hosts=192.168.169.187" ~/Documents/orchestration/boxes/vmware_fusion/playbooks/centos-6.4-x86-minimal-tools.yml
+# 8. package the vagrant box (manually for now) -
+# tar czvf ~/Documents/sources/vagrant/centos-6.4-x86_64-minimal-tools-vmware_fusion.box ~/Documents/orchestration/boxes/vmware_fusion/files/metadata.json *
+# 9. add the vagrant box -
+# vagrant box add centos_64 ~/Documents/sources/vagrant/centos-6.4-x86_64-minimal-tools-vmware_fusion.box --provider vmware_fusion
+
+- name: configure a centos vmware vm for packaging as a vagrant box
+  hosts: $hosts
+  user: root
+  gather_facts: no
+
+  vars:
+    - vagrant_insecure_public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key"
+
+  tasks:
+    - name: enable the eth0 interface on boot
+      lineinfile: dest=/etc/sysconfig/network-scripts/ifcfg-eth0
+                  regexp="^ONBOOT="
+                  line="ONBOOT=yes"
+                  state=present
+
+    - name: update yum packages
+      command: yum update --assume yes
+
+    - name: install vmware repo
+      copy: src=../files/vmware.repo
+            dest=/etc/yum.repos.d/vmware.repo
+
+    - name: install vmware tools
+      yum: name=$item state=latest
+      with_items:
+        - vmware-tools-esx-nox
+        - vmware-tools-esx
+
+    # - name: uninstall vmware repo
+    #   file: path=/etc/yum.repos.d/vmware.repo
+    #         state=absent
+
+    # - name: mount vmware tools cdrom
+    #   command: mount /dev/cdrom /mnt
+
+    # - name: extract vmware tools to tmp dir
+    #   command: tar zxf /mnt/VMwareTools-9.2.2-893683.tar.gz -C /tmp
+
+    # - name: install vmware tools prerequisites
+    #   yum: name=$item state=latest
+    #   with_items:
+    #     - perl
+
+    # - name: install vmware tools
+    #   command: /tmp/vmware-tools-distrib/./vmware-install.pl --default
+
+    - name: install sudo
+      yum: name=sudo
+           state=installed
+
+    - name: create a privileged account for the 'vagrant' user
+      user: name=vagrant
+            groups=wheel
+            state=present
+
+    - name: transfer public key for the 'vagrant' user
+      authorized_key: user=vagrant
+                      key="$vagrant_insecure_public_key"
+
+    # NOTE: this doesn't work with ansible for some reason, do it manually from the vm for now
+    # - name: allow users in the wheel group to use sudo without passwords
+    #   lineinfile: \"dest=/etc/sudoers state=present regexp='^%wheel' line ='%wheel ALL=(ALL) NOPASSWD: ALL'\"
+
+    - name: clean up yum artefacts
+      command: yum clean all
+
+    - name: turn off the vm
+      command: poweroff
+
+    # - name: convert the vmware vm into a vagrant box
+    #   local_action: command tar czf /Users/fpg/Documents/sources/vagrant/centos-6.4-x86_64-minimal-tools-vmware_fusion.box ../files/metadata.json /Users/fpg/Documents/sources/vmware/vagrant-CentOS-6.4-x86_64-minimal-tools.vmwarevm/*
+    #   tags: box
