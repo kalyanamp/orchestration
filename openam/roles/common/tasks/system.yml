@@ -1,0 +1,69 @@
+---
+
+- name: set up openam requirements on the system
+  hosts: $hosts
+  gather_facts: no
+
+  vars_files:
+    - ../vars/main.yml
+
+  handlers:
+    - include: ../handlers/restart.yml
+
+  tasks:
+
+    - name: set the system hostname
+      hostname: name={{ hostname }}
+
+    - name: create artefact dir
+      file: path={{ system_artefact_dir }}
+            state=directory
+
+    - name: install required packages
+      yum: name={{ item }} state=present
+      with_items:
+        - libselinux-python
+        - unzip
+        - "{{ java_package }}"
+        - "{{ container_package }}"
+
+    - name: find JAVA_HOME
+      shell: readlink -f /usr/bin/java | sed "s:bin/java::"
+      register: java_home
+
+    - name: export JAVA_HOME
+      lineinfile: dest=/etc/profile
+                  line="export JAVA_HOME={{ java_home }}"
+                  state=present
+
+    - name: start jee container after reboots
+      service: name={{ container_package }}
+               enabled=yes
+
+    - name: configure jee container environment
+      template: src={{ container_env_src }}
+                dest={{ container_env_dest }}
+                mode=0644
+                owner={{ container_owner }}
+                group={{ container_owner }}
+      notify: restart {{ container_service }}
+
+    - name: generate ssl certificate for jee container
+      command: keytool -genkey -alias {{ hostname }} -dname "CN={{ hostname }}, {{ root_suffix }}" -keyalg RSA -keystore {{ container_conf_dir }}/keystore.jks -storepass {{ container_storepass }} -keypass {{ container_keypass }} -validity 7300
+               creates={{ container_conf_dir }}/keystore.jks
+      when: container_ssl is defined
+
+    # FIXME, broken
+    - name: configure jee container for ssl
+      template: src={{ container_conf_src }}
+                dest={{ container_conf_dest }}
+                mode=0644
+                owner={{ container_owner }}
+                group={{ container_owner }}
+      when: container_ssl is defined
+      notify: restart {{ container_service }}
+
+    - name: disable firewall now and after reboots
+      service: name={{ firewall_service }}
+               state=stopped
+               enabled=no
