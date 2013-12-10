@@ -1,0 +1,25 @@
+---
+
+# install the docker package
+
+- name: install docker
+  yum: name=docker-io
+       enablerepo=epel
+       state=latest
+
+# - name: clone docker-py
+#   git: repo=https://github.com/dotcloud/docker-py.git dest=/opt/docker-py
+
+- name: install docker-py
+  command: python setup.py install
+           chdir=/opt/docker-py
+
+# TODO: move to a separate config playbook
+
+- name: run tomcat servers
+  docker: image=centos command="service tomcat6 start" ports=:8080 state=present
+
+# - name: display ip address and port mappings for containers
+  # debug: msg={{inventory_hostname}}
+  # debug: msg={{inventory_hostname}}:{{item.NetworkSettings.Ports[':8080'][0].HostPort}}
+  # with_items: docker_containers

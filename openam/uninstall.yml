@@ -1,0 +1,7 @@
+---
+
+- name: uninstall a single instance of openam
+  hosts: $hosts
+  gather_facts: no
+
+  tasks: roles/common/tasks/uninstall.yml

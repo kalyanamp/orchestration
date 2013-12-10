@@ -1,74 +1,64 @@
 ---
 
-- name: set up openam requirements on the system
-  hosts: $hosts
-  gather_facts: no
+# set up openam requirements on the system
 
-  vars_files:
-    - ../vars/main.yml
+- name: install required packages
+  yum: name={{ item }} state=present
+  with_items:
+    - libselinux-python
+    - unzip
+    - "{{ java_package }}"
+    - "{{ container_package }}"
 
-  handlers:
-    - include: ../handlers/restart.yml
+- name: start jee container after reboots
+  service: name={{ container_package }}
+           enabled=yes
 
-  tasks:
+- name: configure jee container environment
+  template: src={{ container_env_src }}
+            dest={{ container_env_dest }}
+            mode=0644
+            owner={{ container_owner }}
+            group={{ container_owner }}
+  notify: restart {{ container_service }}
 
-    - name: install required packages
-      yum: name={{ item }} state=present
-      with_items:
-        - libselinux-python
-        - unzip
-        - "{{ java_package }}"
-        - "{{ container_package }}"
+- name: generate ssl certificate for jee container
+  command: keytool -genkey -alias {{ hostname }} -dname "CN={{ hostname }}.split(".")[0],{{ root_suffix }}" -keyalg RSA -keystore {{ container_conf_dir }}/keystore.jks -storepass {{ container_storepass }} -keypass {{ container_storepass }} -validity 7300
+           creates={{ container_conf_dir }}/keystore.jks
+  when: container_ssl is defined
 
-    - name: start jee container after reboots
-      service: name={{ container_package }}
-               enabled=yes
+- name: configure jee container for ssl
+  template: src={{ container_conf_src }}
+            dest={{ container_conf_dest }}
+            mode=0644
+            owner={{ container_owner }}
+            group={{ container_owner }}
+  when: container_ssl is defined
+  notify: restart {{ container_service }}
 
-    - name: configure jee container environment
-      template: src={{ container_env_src }}
-                dest={{ container_env_dest }}
-                mode=0644
-                owner={{ container_owner }}
-                group={{ container_owner }}
-      notify: restart {{ container_service }}
+- name: disable firewall now and after reboots
+  service: name={{ firewall_service }}
+           state=stopped
+           enabled=no
 
-    - name: generate ssl certificate for jee container
-      command: keytool -genkey -alias {{ hostname }} -dname "CN={{ hostname }}.split(".")[0],{{ root_suffix }}" -keyalg RSA -keystore {{ container_conf_dir }}/keystore.jks -storepass {{ container_storepass }} -keypass {{ container_storepass }} -validity 7300
-               creates={{ container_conf_dir }}/keystore.jks
-      when: container_ssl is defined
+- name: set the system hostname (nice to have)
+  hostname: name={{ hostname }}
 
-    - name: configure jee container for ssl
-      template: src={{ container_conf_src }}
-                dest={{ container_conf_dest }}
-                mode=0644
-                owner={{ container_owner }}
-                group={{ container_owner }}
-      when: container_ssl is defined
-      notify: restart {{ container_service }}
+- name: make hostname resolveable for configurator tools
+  lineinfile: dest=/etc/hosts
+              line="127.0.0.1   {{ hostname }}"
+              state=present
 
-    - name: disable firewall now and after reboots
-      service: name={{ firewall_service }}
-               state=stopped
-               enabled=no
+# - name: find JAVA_HOME
+#   shell: readlink -f /usr/bin/java | sed "s:bin/java::"
+#   register: java_home
 
-    - name: set the system hostname
-      hostname: name={{ hostname }}
+# # FIXME: doesn't work on the fly, screws up tools installation
+# # actually, looks like the problem is something else
+# - name: export JAVA_HOME in this session
+#   shell: "export JAVA_HOME={{ java_home.stdout }}"
 
-    # - name: make hostname resolveable for configurator tools
-    #   lineinfile: dest=/etc/hosts
-    #               line="127.0.0.1   {{ hostname }}"
-    #               state=present
-
-    # - name: find JAVA_HOME
-    #   shell: readlink -f /usr/bin/java | sed "s:bin/java::"
-    #   register: java_home
-
-    # # FIXME: doesn't work on the fly, screws up tools installation
-    # # actually, looks like the problem is something else
-    # - name: export JAVA_HOME in this session
-    #   shell: "export JAVA_HOME={{ java_home.stdout }}"
-
-    # - name: export JAVA_HOME permanently
-    #   lineinfile: dest=/etc/profile
-    #               line="export JAVA_HOME={{ java_home.stdout }}"
-    #               state=present
+# - name: export JAVA_HOME permanently
+#   lineinfile: dest=/etc/profile
+#               line="export JAVA_HOME={{ java_home.stdout }}"
+#               state=present

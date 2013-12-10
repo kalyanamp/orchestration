@@ -8,94 +8,82 @@
 #     com.sun.identity.cli.CommandManager "$@"
 # but first, bring up the lb and try without it. i think that's why it's timing out.
 
-- name: install openam
-  hosts: $hosts
-  gather_facts: no
+- name: create openam config dir (to ensure it is writable by jee container)
+  file: path={{ base_dir }}
+        state=directory
+        owner={{ container_owner }}
+        group={{ container_owner }}
 
-  vars_files:
-    - ../vars/main.yml
+# FIXME: is the restart handler broken? doesn't trigger.
+- name: deploy openam war to jee container
+  copy: src=../files/OpenAM-{{ version }}.war
+        dest={{ container_webapps_dir }}/{{deployment_uri }}.war
+  when: install_headless is not defined
+  notify: restart {{ container_service }}
 
-  handlers:
-    - include: ../handlers/restart.yml
+- name: deploy headless openam war to jee container
+  copy: src=../files/OpenAM-ServerOnly-{{ version }}.war
+        dest={{ container_webapps_dir }}/{{ deployment_uri }}.war
+  when: install_headless is defined
+  notify: restart {{ container_service }}
 
-  tasks:
+- name: create openam configurator tools dir
+  command: mkdir {{ configurator_tools_dir }}
+           creates={{ configurator_tools_dir }}
 
-    - name: create openam config dir (to ensure it is writable by jee container)
-      file: path={{ base_dir }}
-            state=directory
-            owner={{ container_owner }}
-            group={{ container_owner }}
+- name: transfer openam configurator tools
+  unarchive: src=../files/SSOConfiguratorTools-{{ version }}.zip
+             dest={{ configurator_tools_dir }}
 
-    # FIXME: is the restart handler broken? doesn't trigger.
-    - name: deploy openam war to jee container
-      copy: src=../files/OpenAM-{{ version }}.war
-            dest={{ container_webapps_dir }}/{{deployment_uri }}.war
-      when: install_headless is not defined
-      notify: restart {{ container_service }}
+- name: create openam admin tools dir
+  command: mkdir {{ admin_tools_dir }}
+           creates={{ admin_tools_dir }}
+  when: install_tools is defined
 
-    - name: deploy headless openam war to jee container
-      copy: src=../files/OpenAM-ServerOnly-{{ version }}.war
-            dest={{ container_webapps_dir }}/{{ deployment_uri }}.war
-      when: install_headless is defined
-      notify: restart {{ container_service }}
+- name: transfer openam admin tools
+  unarchive: src=../files/SSOAdminTools-{{ version }}.zip
+             dest={{ admin_tools_dir }}
+  when: install_tools is defined
 
-    - name: create openam configurator tools dir
-      command: mkdir {{ configurator_tools_dir }}
-               creates={{ configurator_tools_dir }}
+- name: prepare openam configuration for first server
+  template: src=../templates/openam_config_first.properties.j2
+            dest=/tmp/openam_config.properties
+            mode=0400
+  when: join_site is not defined
 
-    - name: transfer openam configurator tools
-      unarchive: src=../files/SSOConfiguratorTools-{{ version }}.zip
-                 dest={{ configurator_tools_dir }}
+- name: prepare openam configuration for subsequent servers
+  template: src=../templates/openam_config_subsequent.properties.j2
+            dest=/tmp/openam_config.properties
+            mode=0400
+  when: join_site is defined
 
-    - name: create openam admin tools dir
-      command: mkdir {{ admin_tools_dir }}
-               creates={{ admin_tools_dir }}
-      when: install_tools is defined
+# NOTE: we could also make {{ container_home }} writable by {{ container_owner }}, but that's less secure
+- name: create openam pointer dir (to ensure it is writable by container owner)
+  file: path={{ container_home }}/.openamcfg
+        state=directory
+        mode=0755
+        owner={{ container_owner }}
+        group={{ container_owner }}
 
-    - name: transfer openam admin tools
-      unarchive: src=../files/SSOAdminTools-{{ version }}.zip
-                 dest={{ admin_tools_dir }}
-      when: install_tools is defined
+- name: start jee container
+  service: name={{ container_service }}
+           state=started
 
-    - name: prepare openam configuration for first server
-      template: src=../templates/openam_config_first.properties.j2
-                dest=/tmp/openam_config.properties
-                mode=0400
-      when: join_site is not defined
+- name: wait for jee container
+  wait_for: port=8080
+            delay=0
+            timeout=120
 
-    - name: prepare openam configuration for subsequent servers
-      template: src=../templates/openam_config_subsequent.properties.j2
-                dest=/tmp/openam_config.properties
-                mode=0400
-      when: join_site is defined
+- name: build openam with configurator tools
+  command: java -jar {{ configurator_tools_dir }}/openam-configurator-tool-{{ version }}.jar --file /tmp/openam_config.properties
+           creates={{ base_dir }}/{{ deployment_uri }}
 
-    # NOTE: we could also make {{ container_home }} writable by {{ container_owner }}, but that's less secure
-    - name: create openam pointer dir (to ensure it is writable by container owner)
-      file: path={{ container_home }}/.openamcfg
-            state=directory
-            mode=0755
-            owner={{ container_owner }}
-            group={{ container_owner }}
+- name: set up admin tools
+  shell: export JAVA_HOME=/usr && ./setup --path {{ base_dir }} --debug {{ admin_tools_dir }}/debug --log {{ tools_dir }}/log
+         chdir={{ admin_tools_dir }}
+         creates={{ admin_tools_dir }}/{{ deployment_uri }}
+  when: install_tools is defined
 
-    - name: start jee container
-      service: name={{ container_service }}
-               state=started
-
-    - name: wait for jee container
-      wait_for: port=8080
-                delay=0
-                timeout=120
-
-    - name: build openam with configurator tools
-      command: java -jar {{ configurator_tools_dir }}/openam-configurator-tool-{{ version }}.jar --file /tmp/openam_config.properties
-               creates={{ base_dir }}/{{ deployment_uri }}
-
-    - name: set up admin tools
-      shell: export JAVA_HOME=/usr && ./setup --path {{ base_dir }} --debug {{ admin_tools_dir }}/debug --log {{ tools_dir }}/log
-             chdir={{ admin_tools_dir }}
-             creates={{ admin_tools_dir }}/{{ deployment_uri }}
-      when: install_tools is defined
-
-    - name: clean up config file for security reasons
-      file: path=/tmp/openam_config.properties
-            state=absent
+# - name: clean up config file for security reasons
+#   file: path=/tmp/openam_config.properties
+#         state=absent

@@ -1,8 +1,5 @@
 ---
 
-# general build and configuration variables, with sensible defaults. you
-# shouldn't need to edit this file, but you may want to.
-
 # system and jvm details
 system_install_dir: /opt
 firewall_service: iptables

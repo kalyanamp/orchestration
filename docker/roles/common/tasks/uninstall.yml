@@ -1,0 +1,5 @@
+---
+
+- name: uninstall docker package
+  yum: name=docker-io
+       state=absent

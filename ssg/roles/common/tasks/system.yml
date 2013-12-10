@@ -20,7 +20,7 @@
            state=stopped
            enabled=no
 
-- name: set the system hostname
+- name: set the system hostname (nice to have)
   hostname: name={{ hostname }}
 
 - name: make hostname resolveable for ssgconfig menu

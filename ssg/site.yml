@@ -1,11 +1,9 @@
 ---
 
-# a basic setup playbook for layer 7 ssg.
+# assumptions: ssg 8.0.0. locally available build files. rhel based systems.
+# no further config.
 
-# assumptions: ssg 8.0.0. staging environment. locally available build files.
-# rhel based systems. no further config.
-
-- name: set up ssg requirements on the system
+- name: set up an instance of the layer 7 secure span gateway (ssg)
   hosts: $hosts
   gather_facts: no
 

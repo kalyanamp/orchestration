@@ -1,6 +1,6 @@
 ---
 
-- name: set up a single or clustered instance of openam
+- name: set up an instance of docker
   hosts: $hosts
   gather_facts: no
 

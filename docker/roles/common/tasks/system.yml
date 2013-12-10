@@ -1,0 +1,28 @@
+---
+
+# set up docker requirements on the system
+
+- name: install required packages
+  yum: name={{ item }} state=present
+  with_items:
+    - ntp
+    - vim
+    - git
+    - python-setuptools
+
+- name: install epel packages
+  yum: name=http://download.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm
+       state=present
+
+- name: enable ntpd now and after reboots
+  service: name=ntpd
+           state=started
+           enabled=yes
+
+- name: disable iptables now and after reboots
+  service: name=iptables
+           state=stopped
+           enabled=no
+
+- name: set the system hostname
+  hostname: name={{ hostname }}
