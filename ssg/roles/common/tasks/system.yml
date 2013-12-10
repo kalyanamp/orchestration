@@ -15,11 +15,6 @@
            state=started
            enabled=yes
 
-# TODO: test if this really does update time on a completely fresh system (seems to)
-# - name: restart ntpd to update time immediately
-#   service: name=ntpd
-#            state=restarted
-
 - name: disable iptables now and after reboots
   service: name=iptables
            state=stopped
