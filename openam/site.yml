@@ -1,8 +1,6 @@
 ---
 
-# TODO: make encryption_key optional, and required if $join_site is set or $lb_name is set. remove from vagrant and test. make a note that this should be set from the beginning (ie for server1) if a clustered configuration is desired.
-# TODO: consider renaming join_site to join_site, to match openam terminology
-# TODO: test initialise.yml
+# TODO: test clustering again
 # TODO: test taking down a (theoretically) unhealthy server and rebuilding it and adding it to the cluster. for maximum effect, this should be the first server in the node. and make changes after bringing it down to see if it will replicate when you bring it back up.
 # TODO: test with a third server (will need to reboot for that). this could have a console attached, as opposed to the first 2 in a user facing cluster.
 # TODO: review these:
@@ -11,30 +9,25 @@
 # https://github.com/ConductAS/puppet-openam
 # https://github.com/dgardnersf/puppet-openam
 
-# assumptions: openam 11.0.0. embedded opendj config store. no user stores or
-# further config. staging. red hat based systems. tomcat6. 1,024mb jvm.
+# a basic setup playbook for openam 11.0.0.
 #
-# a default initialise playbook exists for some basic settings, mainly around
-# verification, load balancing, and debugging. any further config or
-# customisation (eg. custom auth modules, custom login pages, etc.) should go
-# in specific playbooks for your own setup (ie. one or more configuration.yml
-# files).
+# assumptions: openam 11.0.0. staging environment. locally available build
+# files. embedded opendj data/config store. no external user stores or further
+# config. rhel based systems. tomcat6. 1,024mb jvm.
 #
-# the following build vars are optional (and disabled by default):
+# the following build vars are optional and ignored by default:
 #
 # - install_headless (any value to enable)
 # - install_tools (any value to enable)
-# - install_diagnostics (any value to enable)
 # - join_site (any value to enable)
-#     - existing_server_hostname (when join_site is enabled -- TODO: enforce)
-#     - existing_server_id (when join_site is enabled -- TODO: enforce)
-# - encryption_key (when join_site or lb_name are enabled -- TODO: enforce)
-# - openam_java_opts (defaults to -Xmx1024m -XX:MaxPermSize=256m)
-# - lb_site_name (for site/cluster configurations)
-# - lb_primary_url (for site/cluster configurations)
+#     - encryption_key
+#     - lb_site_name
+#     - lb_primary_url
+#     - existing_server_hostname
+#     - existing_server_id
+# - java_opts (defaults to "-Xmx1024m -XX:MaxPermSize=256m")
 # - container_ssl (any value to enable)
-#     - container_storepass (when container_ssl is enabled -- TODO: enforce)
-#     - container_keypass (when container_ssl is enabled -- TODO: enforce)
+#     - container_storepass (keystore storepass and keypass (they must be identical))
 
 - name: set up openam
   hosts: $hosts
@@ -55,11 +48,21 @@
       # when: item is not defined
       # when: not item
       # when: item == None
-      # FIXME: this is a hack, i would expect 'is not defined' to work
+      # FIXME: this is a hack, i would expect 'is not defined' to work. maybe a bug to do with loops?
       when: item.startswith("{{")
+
+    - name: fail if container_storepass is defined while container_ssl is undefined
+      fail: msg="please provide container_ssl as well"
+      when: container_storepass is defined and container_ssl is not defined
+
+    - name: fail if join_site is defined while other site/cluster variables are undefined
+      fail: msg="please provide all site/cluster related variables"
+      when: join_site is defined and (encryption_key is not defined or lb_site_name is not defined or lb_primary_url is not defined or existing_server_id is not defined or existing_server_hostname is not defined)
+
+    # NOTE: we assume that data_store == "embedded" is the default state
+    # - name: fail if join_site is defined and data_store is embedded (assumed by default), while existing server variables are undefined
+    #   fail: msg="please provide existing_server_id and existing_server_hostname"
+    #   when: join_site is defined and (data_store is undefined or data_store == "embedded") and (existing_server_id is not defined or existing_server_hostname is not defined)
 
 - include: roles/common/tasks/system.yml
 - include: roles/common/tasks/install.yml
-# - include: roles/common/tasks/initialise.yml
-# - include: roles/common/tasks/upgrade.yml
-# - include: roles/common/tasks/uninstall.yml

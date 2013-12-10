@@ -1,6 +1,6 @@
 ---
 
-# TODO: in a load balanced configuration, will need lineinfile on $tools_dir$deployment_uri/bin/ssoadm
+# TODO: in a load balanced configuration, will need lineinfile on $admin_tools_dir$deployment_uri/bin/ssoadm
 # replace:
 #     com.sun.identity.cli.CommandManager "$@"
 # with:
@@ -15,6 +15,9 @@
   vars_files:
     - ../vars/main.yml
 
+  handlers:
+    - include: ../handlers/restart.yml
+
   tasks:
 
     - name: create openam config dir (to ensure it is writable by jee container)
@@ -23,61 +26,45 @@
             owner={{ container_owner }}
             group={{ container_owner }}
 
-    - name: try to transfer openam war first
-      # copy: src=../files/OpenAM-{{ version }}.war
-      #       dest={{ system_artefact_dir }}/OpenAM-{{ version }}.war
+    # FIXME: is the restart handler broken? doesn't trigger.
+    - name: deploy openam war to jee container
       copy: src=../files/OpenAM-{{ version }}.war
             dest={{ container_webapps_dir }}/{{deployment_uri }}.war
-      # register: transfer_result
-      # ignore_errors: yes
+      when: install_headless is not defined
+      notify: restart {{ container_service }}
 
-    # FIXME
-    # - name: otherwise, download openam war
-    #   get_url: url={{ archive }}
-    #            dest={{ system_artefact_dir }}/openam_{{ version }}.zip
-    #   when_failed: {{ transfer_result }}
+    - name: deploy headless openam war to jee container
+      copy: src=../files/OpenAM-ServerOnly-{{ version }}.war
+            dest={{ container_webapps_dir }}/{{ deployment_uri }}.war
+      when: install_headless is defined
+      notify: restart {{ container_service }}
 
-    # FIXME: transfer headless openam war
-    # - name: deploy headless openam war to jee container
-    #   command: cp /tmp/openam_{{ version }}/openam-server-only-{{ version }}.war {{ container_webapps_dir }}{{ deployment_uri }}.war
-    #            creates={{ container_webapps_dir }}{{ deployment_uri }}.war
-    #   when: headless
+    - name: create openam configurator tools dir
+      command: mkdir {{ configurator_tools_dir }}
+               creates={{ configurator_tools_dir }}
 
-    - name: transfer openam configurator
+    - name: transfer openam configurator tools
       unarchive: src=../files/SSOConfiguratorTools-{{ version }}.zip
-                 dest={{ configurator_dir }}
-      # register: transfer_result
-      # ignore_errors: yes
+                 dest={{ configurator_tools_dir }}
 
-    # TODO: otherwise, download?
+    - name: create openam admin tools dir
+      command: mkdir {{ admin_tools_dir }}
+               creates={{ admin_tools_dir }}
+      when: install_tools is defined
 
     - name: transfer openam admin tools
-      unarchive: src=../files/SSOConfiguratorTools-{{ version }}.zip
       unarchive: src=../files/SSOAdminTools-{{ version }}.zip
-                 dest={{ tools_dir }}
-      when: {{ install_tools }}
-      # register: transfer_result
-      # ignore_errors: yes
-
-    # TODO: otherwise, download?
-    #
-      command: unzip -q /tmp/openam_{{ version }}/openam-distribution-ssoadmintools-{{ version }}.zip -d {{ tools_dir }}
-               creates={{ tools_dir }}
-      when: {{ install_tools }}
-
-    # - name: unzip diagnostic tools
-    #   command: unzip -q /tmp/openam_{{ version }}/openam-distribution-diagnostics-{{ version }}.zip -d {{ diagnostics_dir }}
-    #            creates={{ diagnostics_dir }}
-    #   when: {{ diagnostics }}
+                 dest={{ admin_tools_dir }}
+      when: install_tools is defined
 
     - name: prepare openam configuration for first server
-      template: src=../templates/openam_config_first.properties
+      template: src=../templates/openam_config_first.properties.j2
                 dest=/tmp/openam_config.properties
                 mode=0400
       when: join_site is not defined
 
     - name: prepare openam configuration for subsequent servers
-      template: src=../templates/openam_config_subsequent.properties
+      template: src=../templates/openam_config_subsequent.properties.j2
                 dest=/tmp/openam_config.properties
                 mode=0400
       when: join_site is defined
@@ -99,20 +86,15 @@
                 delay=0
                 timeout=120
 
-    # - name: make the hostname resolveable (required by openam)
-    #   lineinfile: dest=/etc/hosts
-    #               line="127.0.0.1   {{ hostname }}"
-    #               state=present
-
-    - name: build openam with configurator
-      command: java -jar {{ configurator_dir }}/openam-configurator-tool-{{ version }}.jar --file /tmp/openam_config.properties
-               creates={{ base_dir }}{{ deployment_uri }}
+    - name: build openam with configurator tools
+      command: java -jar {{ configurator_tools_dir }}/openam-configurator-tool-{{ version }}.jar --file /tmp/openam_config.properties
+               creates={{ base_dir }}/{{ deployment_uri }}
 
     - name: set up admin tools
-      command: ./setup --path {{ base_dir }} --debug {{ tools_dir }}/debug --log {{ tools_dir }}/log
-             chdir={{ tools_dir }}
-             creates={{ tools_dir }}{{ deployment_uri }}
-      when: {{ install_tools }}
+      shell: export JAVA_HOME=/usr && ./setup --path {{ base_dir }} --debug {{ admin_tools_dir }}/debug --log {{ tools_dir }}/log
+             chdir={{ admin_tools_dir }}
+             creates={{ admin_tools_dir }}/{{ deployment_uri }}
+      when: install_tools is defined
 
     - name: clean up config file for security reasons
       file: path=/tmp/openam_config.properties

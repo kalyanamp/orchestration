@@ -1,4 +1,8 @@
 ---
 
+- name: start ${container_service}
+  service: name=${container_service} state=started
+
 - name: restart {{ container_service }}
   service: name={{ container_service }} state=restarted
+

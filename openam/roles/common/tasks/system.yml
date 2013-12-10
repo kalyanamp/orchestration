@@ -12,13 +12,6 @@
 
   tasks:
 
-    - name: set the system hostname
-      hostname: name={{ hostname }}
-
-    - name: create artefact dir
-      file: path={{ system_artefact_dir }}
-            state=directory
-
     - name: install required packages
       yum: name={{ item }} state=present
       with_items:
@@ -26,15 +19,6 @@
         - unzip
         - "{{ java_package }}"
         - "{{ container_package }}"
-
-    - name: find JAVA_HOME
-      shell: readlink -f /usr/bin/java | sed "s:bin/java::"
-      register: java_home
-
-    - name: export JAVA_HOME
-      lineinfile: dest=/etc/profile
-                  line="export JAVA_HOME={{ java_home }}"
-                  state=present
 
     - name: start jee container after reboots
       service: name={{ container_package }}
@@ -49,11 +33,10 @@
       notify: restart {{ container_service }}
 
     - name: generate ssl certificate for jee container
-      command: keytool -genkey -alias {{ hostname }} -dname "CN={{ hostname }}, {{ root_suffix }}" -keyalg RSA -keystore {{ container_conf_dir }}/keystore.jks -storepass {{ container_storepass }} -keypass {{ container_keypass }} -validity 7300
+      command: keytool -genkey -alias {{ hostname }} -dname "CN={{ hostname }}.split(".")[0],{{ root_suffix }}" -keyalg RSA -keystore {{ container_conf_dir }}/keystore.jks -storepass {{ container_storepass }} -keypass {{ container_storepass }} -validity 7300
                creates={{ container_conf_dir }}/keystore.jks
       when: container_ssl is defined
 
-    # FIXME, broken
     - name: configure jee container for ssl
       template: src={{ container_conf_src }}
                 dest={{ container_conf_dest }}
@@ -67,3 +50,25 @@
       service: name={{ firewall_service }}
                state=stopped
                enabled=no
+
+    - name: set the system hostname
+      hostname: name={{ hostname }}
+
+    # - name: make hostname resolveable for configurator tools
+    #   lineinfile: dest=/etc/hosts
+    #               line="127.0.0.1   {{ hostname }}"
+    #               state=present
+
+    # - name: find JAVA_HOME
+    #   shell: readlink -f /usr/bin/java | sed "s:bin/java::"
+    #   register: java_home
+
+    # # FIXME: doesn't work on the fly, screws up tools installation
+    # # actually, looks like the problem is something else
+    # - name: export JAVA_HOME in this session
+    #   shell: "export JAVA_HOME={{ java_home.stdout }}"
+
+    # - name: export JAVA_HOME permanently
+    #   lineinfile: dest=/etc/profile
+    #               line="export JAVA_HOME={{ java_home.stdout }}"
+    #               state=present
