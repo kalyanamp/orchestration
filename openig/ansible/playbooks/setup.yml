@@ -1,8 +1,0 @@
----
-
-- name: set up openig
-  hosts: $hosts
-  gather_facts: no
-
-# - include: system.yml
-# - include: openig.yml

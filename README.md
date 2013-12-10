@@ -1,4 +1,4 @@
 Orchestration
 =============
 
-Getting there. Feel free to fork and send pull requests.
+Ansible playbooks and dockerfiles for various products.
