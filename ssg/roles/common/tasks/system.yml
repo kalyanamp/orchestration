@@ -1,0 +1,45 @@
+---
+
+# set up ssg requirements on the system
+
+- name: install required packages
+  yum: name={{ item }} state=present
+  with_items:
+    - libselinux-python
+    - unzip
+    - "{{ java_package }}"
+    - ntp
+
+- name: enable ntpd now and after reboots
+  service: name=ntpd
+           state=started
+           enabled=yes
+
+# TODO: test if this really does update time on a completely fresh system (seems to)
+# - name: restart ntpd to update time immediately
+#   service: name=ntpd
+#            state=restarted
+
+- name: disable iptables now and after reboots
+  service: name=iptables
+           state=stopped
+           enabled=no
+
+- name: set the system hostname
+  hostname: name={{ hostname }}
+
+- name: make hostname resolveable for ssgconfig menu
+  lineinfile: dest=/etc/hosts
+              line="127.0.0.1   {{ hostname }}"
+              state=present
+
+- name: find JAVA_HOME
+  shell: readlink -f /usr/bin/java | sed "s:bin/java::"
+  register: java_home
+
+- name: transfer jce libs
+  unarchive: src=../files/UnlimitedJCEPolicyJDK7.zip
+             dest=/tmp
+
+- name: install jce libs
+  shell: /bin/cp --verbose /tmp/UnlimitedJCEPolicy/* {{ java_home.stdout }}/lib/security

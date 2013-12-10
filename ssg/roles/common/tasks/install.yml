@@ -1,0 +1,14 @@
+---
+
+# install the ssg package
+
+- name: transfer ssg package
+  copy: src=../files/{{ ssg_package }}
+             dest=/tmp
+
+- name: install ssg package
+  yum: name=/tmp/{{ ssg_package }}
+       state=present
+
+- name: show ssg setup command
+  debug: msg="run /opt/SecureSpan/Gateway/runtime/bin/setup.sh"

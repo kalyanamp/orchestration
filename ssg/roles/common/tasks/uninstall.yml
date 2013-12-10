@@ -1,0 +1,41 @@
+---
+
+- hosts: $hosts
+  gather_facts: no
+
+  vars_files:
+    - ../vars/main.yml
+
+  tasks:
+
+    - name: stop java container
+      service: name={{ container_service }}
+               state=stopped
+
+    - name: remove openam base dir
+      file: path={{ base_dir }}
+            state=absent
+
+    - name: undeploy openam war file
+      file: path={{ container_webapps_dir }}/{{ deployment_uri }}.war
+            state=absent
+
+    - name: undeploy openam webapp
+      file: path={{ container_webapps_dir }}/{{ deployment_uri }}
+            state=absent
+
+    - name: remove the openam hidden file
+      file: path={{ container_home }}/.openamcfg
+            state=absent
+
+    - name: remove the admin tools
+      file: path={{ tools_dir }}
+            state=absent
+
+    - name: remove the configurator tools
+      file: path={{ configurator_dir }}
+            state=absent
+
+    - name: clear container cache
+      file: path={{ container_cache_dir }}/{{ deployment_uri }}
+            state=absent

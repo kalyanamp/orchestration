@@ -1,0 +1,9 @@
+---
+
+# general build and configuration variables, with sensible defaults. you
+# shouldn't need to edit this file, but you may want to.
+
+java_package: java-1.7.0-openjdk
+
+ssg_version: 8.0-5
+ssg_package: ssg-{{ ssg_version }}.noarch.rpm

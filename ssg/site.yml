@@ -1,0 +1,13 @@
+---
+
+# a basic setup playbook for layer 7 ssg.
+
+# assumptions: ssg 8.0.0. staging environment. locally available build files.
+# rhel based systems. no further config.
+
+- name: set up ssg requirements on the system
+  hosts: $hosts
+  gather_facts: no
+
+  roles:
+    - common
