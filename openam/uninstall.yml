@@ -4,4 +4,6 @@
   hosts: $hosts
   gather_facts: no
 
-  tasks: roles/common/tasks/uninstall.yml
+  roles:
+    - common
+    - uninstall

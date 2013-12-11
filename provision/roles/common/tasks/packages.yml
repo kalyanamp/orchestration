@@ -1,5 +1,22 @@
 ---
 
+# https://thevagabondgeek.com/5-centos-yum-groupinstall-basics
+# yum -v grouplist
+
+  #   - @base (includes a lot of the below packages)
+  #   - @development
+  #   - @java-platform
+  #   - @web-server
+  #   - @php
+  #   - @ruby-runtime
+  # - http://download.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm
+  #   - libselinux-python
+  #   - tomcat6
+  #   - htop (seems to be epel only)
+  #   - iotop
+  #   - nc
+  #   - git (part of @development?)
+
 # - production: yes (unset)
 
 # TODO: install jetty if it's in the epel (check)
@@ -16,7 +33,6 @@
       - @base
       - @development
       - @java-platform
-      - @java-platform-devel
         # # TODO: check which of these are already in base and remove
     - standard_packages:
       - ntp

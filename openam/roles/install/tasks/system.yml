@@ -20,7 +20,7 @@
             mode=0644
             owner={{ container_owner }}
             group={{ container_owner }}
-  notify: restart {{ container_service }}
+  notify: restart jee container
 
 - name: generate ssl certificate for jee container
   command: keytool -genkey -alias {{ hostname }} -dname "CN={{ hostname }}.split(".")[0],{{ root_suffix }}" -keyalg RSA -keystore {{ container_conf_dir }}/keystore.jks -storepass {{ container_storepass }} -keypass {{ container_storepass }} -validity 7300
@@ -34,7 +34,7 @@
             owner={{ container_owner }}
             group={{ container_owner }}
   when: container_ssl is defined
-  notify: restart {{ container_service }}
+  notify: restart jee container
 
 - name: disable firewall now and after reboots
   service: name={{ firewall_service }}
@@ -49,12 +49,16 @@
               line="127.0.0.1   {{ hostname }}"
               state=present
 
+# - name: export JAVA_HOME in this session
+#   shell: "export JAVA_HOME=/usr/lib/jvm/java-1.6.0-openjdk-1.6.0.0.x86_64/jre"
+
 # - name: find JAVA_HOME
 #   shell: readlink -f /usr/bin/java | sed "s:bin/java::"
 #   register: java_home
 
 # # FIXME: doesn't work on the fly, screws up tools installation
 # # actually, looks like the problem is something else
+# # the problem is that ssoadm needs java 1.6
 # - name: export JAVA_HOME in this session
 #   shell: "export JAVA_HOME={{ java_home.stdout }}"
 

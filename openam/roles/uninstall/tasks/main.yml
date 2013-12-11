@@ -2,7 +2,6 @@
 
 # the following vars are required:
 #
-# - hosts
 # - deployment_uri
 
 - name: fail if deployment_uri is undefined
@@ -30,11 +29,11 @@
         state=absent
 
 - name: remove the admin tools
-  file: path={{ tools_dir }}
+  file: path={{ admin_tools_dir }}
         state=absent
 
 - name: remove the configurator tools
-  file: path={{ configurator_dir }}
+  file: path={{ configurator_tools_dir }}
         state=absent
 
 - name: clear container cache

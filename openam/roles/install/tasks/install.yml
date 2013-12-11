@@ -14,18 +14,17 @@
         owner={{ container_owner }}
         group={{ container_owner }}
 
-# FIXME: is the restart handler broken? doesn't trigger.
 - name: deploy openam war to jee container
   copy: src=../files/OpenAM-{{ version }}.war
         dest={{ container_webapps_dir }}/{{deployment_uri }}.war
   when: install_headless is not defined
-  notify: restart {{ container_service }}
+  notify: restart jee container
 
 - name: deploy headless openam war to jee container
   copy: src=../files/OpenAM-ServerOnly-{{ version }}.war
         dest={{ container_webapps_dir }}/{{ deployment_uri }}.war
   when: install_headless is defined
-  notify: restart {{ container_service }}
+  notify: restart jee container
 
 - name: create openam configurator tools dir
   command: mkdir {{ configurator_tools_dir }}
@@ -38,12 +37,12 @@
 - name: create openam admin tools dir
   command: mkdir {{ admin_tools_dir }}
            creates={{ admin_tools_dir }}
-  when: install_tools is defined
+  when: install_admin_tools is defined
 
 - name: transfer openam admin tools
   unarchive: src=../files/SSOAdminTools-{{ version }}.zip
              dest={{ admin_tools_dir }}
-  when: install_tools is defined
+  when: install_admin_tools is defined
 
 - name: prepare openam configuration for first server
   template: src=../templates/openam_config_first.properties.j2
@@ -78,12 +77,13 @@
   command: java -jar {{ configurator_tools_dir }}/openam-configurator-tool-{{ version }}.jar --file /tmp/openam_config.properties
            creates={{ base_dir }}/{{ deployment_uri }}
 
-- name: set up admin tools
-  shell: export JAVA_HOME=/usr && ./setup --path {{ base_dir }} --debug {{ admin_tools_dir }}/debug --log {{ tools_dir }}/log
+- name: install openam admin tools
+  # shell: JAVA_HOME=/usr && ./setup --path {{ base_dir }} --debug {{ admin_tools_dir }}/debug --log {{ admin_tools_dir }}/log
+  shell: JAVA_HOME=/usr/lib/jvm/java-1.6.0-openjdk-1.6.0.0.x86_64/jre && ./setup --path {{ base_dir }} --debug {{ admin_tools_dir }}/debug --log {{ admin_tools_dir }}/log
          chdir={{ admin_tools_dir }}
          creates={{ admin_tools_dir }}/{{ deployment_uri }}
-  when: install_tools is defined
+  when: install_admin_tools is defined
 
-# - name: clean up config file for security reasons
-#   file: path=/tmp/openam_config.properties
-#         state=absent
+- name: clean up config file for security reasons
+  file: path=/tmp/openam_config.properties
+        state=absent

@@ -1,0 +1,8 @@
+---
+
+# initialisation variables for sso admin tools
+server_name: "{{ server_url }}/{{ deployment_uri }}"
+password_file: /tmp/password.txt
+admin_creds: --adminid amadmin --password-file {{ password_file }}
+ssoadm_bin: "/usr/lib/jvm/java-1.6.0-openjdk-1.6.0.0.x86_64/jre && {{ admin_tools_dir }}/{{ deployment_uri }}/bin/ssoadm"
+# ssoadm_bin: "{{ admin_tools_dir }}/{{ deployment_uri }}/bin/ssoadm {{ admin_creds }}"

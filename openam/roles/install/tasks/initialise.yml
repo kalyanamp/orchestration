@@ -3,17 +3,12 @@
 # TODO: need to get ssoadm installed for this to get worked. could it be selinux related? maybe -- try to disable it first before running the install command manually in the vm.
 
 # this playbook verifies the openam installation and does some very basic
-# configuration
-
-# any further configuration should go in specific playbooks for your own setup
+# configuration # any further configuration should go in specific playbooks for your own setup
 # (ie. one or more configuration.yml files).
 
-vars:
-  - server_name: "{{ server_url }}/{{ deployment_uri }}"
-  - password_file: /tmp/password.txt
-  - admin_creds: --adminid amadmin --password-file {{ password_file }}
-  - ssoadm_bin: "{{ tools_dir }}/{{ deployment_uri }}/bin/ssoadm"
-  # - ssoadm_bin: "{{ tools_dir }}/{{ deployment_uri }}/bin/ssoadm {{ admin_creds }}"
+- name: fail if install_admin_tools is undefined
+  fail: msg="please provide install_admin_tools"
+  when: install_admin_tools is not defined
 
 - name: create the password file
   shell: echo {{ admin_password }} > {{ password_file }}

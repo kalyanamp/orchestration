@@ -5,20 +5,6 @@ system_install_dir: /opt
 firewall_service: iptables
 java_package: java-1.7.0-openjdk
 
-# openam deployment details. KISS: always use http/8080 for server urls,
-# otherwise sso admin tools will need the server's cert in cacerts, and we'll
-# need to determine the server url differently based on whether or not ssl is
-# used.
-version: 11.0.0
-server_url: "http://{{ hostname }}:8080"
-base_dir: "{{ system_install_dir }}/openam"
-user_locale: en_US
-server_locale: en_US
-config_store_host: "{{ hostname }}"
-docs_dir: "{{ system_install_dir }}/docs"
-admin_tools_dir: "{{ system_install_dir }}/ssoadmintools"
-configurator_tools_dir: "{{ system_install_dir }}/ssoconfiguratortools"
-
 # jee container details
 container_package: tomcat6
 container_service: tomcat6
@@ -31,3 +17,16 @@ container_env_dest: "{{ container_home }}/bin/setenv.sh"
 container_conf_src: ../templates/server.xml.j2
 container_conf_dest: "{{ container_home }}/conf/server.xml"
 container_cache_dir: "{{ container_home }}/work/Catalina/localhost"
+
+# openam deployment details. KISS: always use http/8080 for server urls,
+# otherwise sso admin tools will need the server's cert in cacerts, and we'll
+# need to determine the server url differently based on whether or not ssl is
+# used.
+version: 11.0.0
+server_url: "http://{{ hostname }}:8080"
+base_dir: "{{ system_install_dir }}/openam"
+user_locale: en_US
+server_locale: en_US
+config_store_host: "{{ hostname }}"
+admin_tools_dir: "{{ system_install_dir }}/ssoadmintools"
+configurator_tools_dir: "{{ system_install_dir }}/ssoconfiguratortools"

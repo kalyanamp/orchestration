@@ -1,7 +1,7 @@
 ---
 
-- name: start container
+- name: start jee container
   service: name={{ container_service }} state=started
 
-- name: restart container
+- name: restart jee container
   service: name={{ container_service }} state=restarted
