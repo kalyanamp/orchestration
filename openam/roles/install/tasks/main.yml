@@ -4,7 +4,11 @@
 # TODO: test clustering again
 # TODO: test taking down a (theoretically) unhealthy server and rebuilding it and adding it to the cluster. for maximum effect, this should be the first server in the node. and make changes after bringing it down to see if it will replicate when you bring it back up.
 # TODO: test with a third server (will need to reboot for that). this could have a console attached, as opposed to the first 2 in a user facing cluster.
+#
 # TODO: review these:
+# http://feed.askmaclean.com/archives/spin-up-the-forgerock-open-identity-stack-ois-using-ansible-and-vagrant.html
+# https://github.com/wstrange/frstack
+# http://blog.warrenstrange.com
 # http://wiki.opencsi.com/public/bin/view/OpenAM/SilentInstallation
 # http://blog.profiq.cz/2012/01/19/automated-installation-and-configuration-of-openam/
 # https://github.com/ConductAS/puppet-openam
@@ -65,3 +69,6 @@
 - include: system.yml
 - include: install.yml
 - include: initialise.yml
+
+- name: show openam url
+  debug: msg="success! log in to openam at {{ server_name }}"

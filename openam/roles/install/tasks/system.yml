@@ -6,9 +6,14 @@
   yum: name={{ item }} state=present
   with_items:
     - libselinux-python
-    - unzip
+    - ntp
     - "{{ java_package }}"
     - "{{ container_package }}"
+
+- name: enable ntpd now and after reboots
+  service: name=ntpd
+           state=started
+           enabled=yes
 
 - name: start jee container after reboots
   service: name={{ container_package }}
@@ -49,6 +54,7 @@
               line="127.0.0.1   {{ hostname }}"
               state=present
 
+# FIXME: none of this works reliably for some reason. need to _export_ the value _&&_ run the command in the same line.
 # - name: export JAVA_HOME in this session
 #   shell: "export JAVA_HOME=/usr/lib/jvm/java-1.6.0-openjdk-1.6.0.0.x86_64/jre"
 

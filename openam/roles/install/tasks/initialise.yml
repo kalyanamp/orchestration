@@ -1,10 +1,8 @@
 ---
 
-# TODO: need to get ssoadm installed for this to get worked. could it be selinux related? maybe -- try to disable it first before running the install command manually in the vm.
-
 # this playbook verifies the openam installation and does some very basic
-# configuration # any further configuration should go in specific playbooks for your own setup
-# (ie. one or more configuration.yml files).
+# configuration. any further configuration should go in specific playbooks for
+# your own setup (ie. one or more configuration.yml files).
 
 - name: fail if install_admin_tools is undefined
   fail: msg="please provide install_admin_tools"
@@ -18,16 +16,21 @@
   file: path={{ password_file }} mode=0400
 
 - name: verify this openam server
-  # command: "{{ ssoadm_bin }} list-servers"
-  command: "{{ ssoadm_bin }} list-servers {{ admin_creds }}"
+  shell: "{{ ssoadm_bin }} list-servers {{ admin_creds }}"
+
+# NOTE: you can add --withdefaults for full server config
+- name: list server config
+  shell: "{{ ssoadm_bin }} list-server-cfg --servername {{ server_name }} {{ admin_creds }}"
 
 # NOTE: you can refer to the "default" server as well as individual ones
-# - name: enable debugging by default
-  # command: {{ ssoadm_bin }} update-server-cfg --servername $server_name --attributevalues "com.iplanet.services.debug.level=message"
+- name: enable debugging by default
+  shell: "{{ ssoadm_bin }} update-server-cfg --servername {{ server_name }} --attributevalues 'com.iplanet.services.debug.level=message' {{ admin_creds }}"
+  notify: restart jee container
 
-# - name: list server config
-  # command: {{ ssoadm_bin }} list-server-cfg --servername $server_name --withdefaults
-  # command: {{ ssoadm_bin }} list-server-cfg --servername $server_name
+- name: wait for jee container
+  wait_for: port=8080
+            delay=10
+            timeout=120
 
-# - name: clean up the password file for security reasons
-  # file: path={{ password_file }} state=absent
+- name: clean up the password file for security reasons
+  file: path={{ password_file }} state=absent
