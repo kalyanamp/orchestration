@@ -1,0 +1,29 @@
+---
+
+# assumptions: gateway v8 or higher. locally available build files. rhel based systems.
+# no further config.
+
+- name: set up an instance of the ca api gateway
+  hosts: vm
+  #vars_files: "vars/main.yml"
+  vars:
+    selinux_state: permissive
+    ntp_timezone:
+      - "Australia/Sydney"
+    firewall_allowed_tcp_ports:
+      - "22"
+      - "8080"
+      - "8443"
+    java_packages:
+      - "java-1.8.0-openjdk"
+
+  roles:
+    - kbrebanov.selinux
+    - ANXS.hostname
+    - geerlingguy.firewall
+    - geerlingguy.ntp
+    - kbrebanov.unzip
+    - geerlingguy.java
+    - geerlingguy.mysql
+    - mbadran.jce
+    - mbadran.caapigateway

@@ -1,0 +1,12 @@
+---
+
+ntp_timezone:
+  - "Australia/Sydney"
+
+firewall_allowed_tcp_ports:
+  - "22"
+  - "8080"
+  - "8443"
+
+java_packages:
+  - "java-1.8.0-openjdk"

@@ -1,0 +1,12 @@
+---
+
+- name: find JAVA_HOME
+  shell: readlink -f /usr/bin/java | sed "s:bin/java::"
+  register: java_home
+
+- name: transfer jce libs
+  unarchive: src=../files/jce_policy-8.zip
+             dest=/tmp
+
+- name: install jce libs
+  shell: /bin/cp --verbose /tmp/UnlimitedJCEPolicyJDK8/* {{ java_home.stdout }}/lib/security

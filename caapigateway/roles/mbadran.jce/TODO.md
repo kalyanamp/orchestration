@@ -1,0 +1,2 @@
+- Consider making this handle jce7 and/or jce8
+    - intelligently, based on the installed version of java?
