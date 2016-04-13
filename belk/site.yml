@@ -1,0 +1,30 @@
+---
+
+- name: set up an all-in-one instance of belk
+  hosts: vm
+  vars:
+    selinux_state: permissive
+    ntp_timezone:
+      - "Australia/Sydney"
+    firewall_allowed_tcp_ports:
+      - "22"
+      - "80"
+      - "443"
+      - "9200"
+      - "5601"
+    java_packages:
+      - "java-1.8.0-openjdk"
+
+  roles:
+    - kbrebanov.selinux
+    - ANXS.hostname
+    - geerlingguy.firewall
+    - geerlingguy.ntp
+    - kbrebanov.epel
+    - geerlingguy.java
+    - geerlingguy.elasticsearch
+    - cyverse.logstash
+    - samdoran.kibana
+    # - mrlesmithjr.elk-kibana
+    # - geerlingguy.nginx
+    # - cyverse.beats
