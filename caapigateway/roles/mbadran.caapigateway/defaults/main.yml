@@ -1,4 +1,4 @@
 ---
 
-gateway_version: 8.3.00-2
+gateway_version: 9.0.00-5
 gateway_package: ssg-{{ gateway_version }}.noarch.rpm

@@ -8,8 +8,7 @@
   #vars_files: "vars/main.yml"
   vars:
     selinux_state: permissive
-    ntp_timezone:
-      - "Australia/Sydney"
+    ntp_timezone: Australia/Sydney
     firewall_allowed_tcp_ports:
       - "22"
       - "8080"

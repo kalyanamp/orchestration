@@ -5,7 +5,7 @@
   register: java_home
 
 - name: transfer jce libs
-  unarchive: src=../files/jce_policy-8.zip
+  unarchive: src=./roles/mbadran.jce/files/jce_policy-8.zip
              dest=/tmp
 
 - name: install jce libs

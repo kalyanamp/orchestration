@@ -1,0 +1,3 @@
+- bootstrap licence and restman
+- figure out if it's possible to do auto setup (did the other project achieve it?)
+- make a note that this is a platform agnostic build
