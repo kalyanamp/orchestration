@@ -1,0 +1,35 @@
+ssg:
+  image: caapim/gateway:9.1.00-6342
+  mem_limit: 2048m
+  expose:
+    - "8777"
+  ports:
+    - "8080:8080"
+    - "8443:8443"
+    - "9443:9443"
+  environment:
+    SSG_CLUSTER_COMMAND: "create"
+    SSG_CLUSTER_HOST: "localhost"
+    SSG_CLUSTER_PASSWORD: "7layer"
+    SSG_DATABASE_TYPE: "mysql"
+    SSG_DATABASE_HOST: "mysql"
+    SSG_DATABASE_PORT: "3306"
+    SSG_DATABASE_NAME: "ssg"
+    SSG_DATABASE_USER: "gateway"
+    SSG_DATABASE_PASSWORD: "7layer"
+    SSG_DATABASE_ADMIN_USER: "root"
+    SSG_DATABASE_ADMIN_PASS: "7layer"
+    SSG_ADMIN_USER: "pmadmin"
+    SSG_ADMIN_PASS: "7layer"
+    SSG_LICENSE:
+    SSG_INTERNAL_SERVICES: "restman wsman"
+  links:
+    - mysql
+mysql:
+  image: mysql:5.5
+  mem_limit: 512m
+#  volumes:
+#    - ./mysqlconf:/etc/mysql/conf.d
+#    - /root/mysqldatadir:/var/lib/mysql
+  environment:
+    - MYSQL_ROOT_PASSWORD=7layer
